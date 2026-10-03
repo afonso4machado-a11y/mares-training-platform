@@ -1091,6 +1091,9 @@ input {
 
 /* ── Friday Sections ── */
 .friday-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
   margin-bottom: 28px;
 }
 
@@ -1099,14 +1102,14 @@ input {
   font-size: 1.25rem;
   font-weight: 500;
   color: var(--twilight);
-  margin: 0 0 14px;
+  margin: 0;
 }
 
 .section-label-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin: 0;
 }
 
 .circuit-tag {
