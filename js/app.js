@@ -225,7 +225,12 @@ const MareApp = (function () {
 
     // Handle Weekend Days (Saturday & Sunday)
     if (day === 'sat' || day === 'sun') {
-      renderWeekendCard(listEl, dayMeta);
+      const weekendExercises = MareEditor.getWeekendExercises(day);
+      if (weekendExercises && weekendExercises.length > 0) {
+        renderWeekendTraining(listEl, weekendExercises, dayMeta, day);
+      } else {
+        renderWeekendCard(listEl, dayMeta, day);
+      }
       return;
     }
 
@@ -264,8 +269,8 @@ const MareApp = (function () {
     });
   }
 
-  // ── Weekend Rest Screen (3D Solid Breathing Sphere) ──
-  function renderWeekendCard(container, dayMeta) {
+  // ── Weekend Rest Screen (3D Moon & Concentric Gyroscope) ──
+  function renderWeekendCard(container, dayMeta, day) {
     if (!dayMeta) {
       dayMeta = {
         id: 'weekend_rest',
@@ -274,15 +279,33 @@ const MareApp = (function () {
         intro: 'Allow muscle fibers to repair, restore glycogen reserves, and replenish central nervous system energy for the upcoming training week.'
       };
     }
-    const isSat = dayMeta.id && dayMeta.id.includes('sat');
+    const isSat = (day === 'sat') || (dayMeta.id && dayMeta.id.includes('sat'));
     const wrap = document.createElement('div');
     wrap.className = 'weekend-rest-container';
 
+    const visual3DHtml = isSat
+      ? `
+        <div class="moon-3d-wrap">
+          <div class="moon-body">
+            <div class="moon-crater moon-crater-1"></div>
+            <div class="moon-crater moon-crater-2"></div>
+            <div class="moon-crater moon-crater-3"></div>
+            <div class="moon-shadow"></div>
+          </div>
+        </div>
+        <p class="weekend-love-message">I love you from here to the moon liefje</p>
+      `
+      : `
+        <div class="gyroscope-3d-wrap">
+          <div class="gyro-ring gyro-ring-outer"></div>
+          <div class="gyro-ring gyro-ring-mid"></div>
+          <div class="gyro-ring gyro-ring-inner"></div>
+        </div>
+      `;
+
     wrap.innerHTML = `
       <div class="weekend-rest-card">
-        <div class="breathing-sphere-wrap">
-          <div class="breathing-sphere"></div>
-        </div>
+        ${visual3DHtml}
         <h3 class="weekend-rest-title">${dayMeta.title}</h3>
         <p class="weekend-rest-focus">${dayMeta.focus}</p>
         <p class="weekend-rest-desc">${dayMeta.intro || 'Allow muscle fibers to repair, restore glycogen reserves, and replenish central nervous system energy for the upcoming training week.'}</p>
@@ -304,10 +327,114 @@ const MareApp = (function () {
             <p class="pillar-text">Review upcoming Monday Push session and prepare your schedule.</p>
           </div>
         </div>
+
+        <button class="weekend-add-btn" id="weekend-add-trigger" data-day="${day}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Add Exercise
+        </button>
+
+        <div class="weekend-inline-form hidden" id="weekend-inline-form">
+          <h4 class="weekend-form-title">Add Weekend Exercise</h4>
+          <input type="text" id="weekend-ex-name" class="editor-input" placeholder="Exercise name (e.g. Mobility Flow)" autocomplete="off" />
+          <input type="text" id="weekend-ex-target" class="editor-input" placeholder="Focus (e.g. Hip Mobility)" autocomplete="off" />
+          <div class="editor-input-row">
+            <input type="number" id="weekend-ex-sets" class="editor-input editor-input-small" placeholder="Sets" value="3" min="1" max="10" />
+            <input type="text" id="weekend-ex-reps" class="editor-input editor-input-small" placeholder="Reps (e.g. 10 or 20 min)" value="10" />
+          </div>
+          <div class="weekend-form-actions">
+            <button class="btn-primary weekend-save-btn" id="weekend-save-btn">Add to ${isSat ? 'Saturday' : 'Sunday'}</button>
+            <button class="btn-outline weekend-cancel-btn" id="weekend-cancel-btn">Cancel</button>
+          </div>
+        </div>
       </div>
     `;
 
     container.appendChild(wrap);
+
+    const addTrigger = wrap.querySelector('#weekend-add-trigger');
+    const formEl = wrap.querySelector('#weekend-inline-form');
+    const saveBtn = wrap.querySelector('#weekend-save-btn');
+    const cancelBtn = wrap.querySelector('#weekend-cancel-btn');
+
+    if (addTrigger && formEl) {
+      addTrigger.addEventListener('click', () => {
+        addTrigger.classList.add('hidden');
+        formEl.classList.remove('hidden');
+        const nameIn = formEl.querySelector('#weekend-ex-name');
+        if (nameIn) nameIn.focus();
+      });
+    }
+
+    if (cancelBtn && formEl && addTrigger) {
+      cancelBtn.addEventListener('click', () => {
+        formEl.classList.add('hidden');
+        addTrigger.classList.remove('hidden');
+      });
+    }
+
+    if (saveBtn && formEl) {
+      saveBtn.addEventListener('click', () => {
+        const nameIn = formEl.querySelector('#weekend-ex-name');
+        const targetIn = formEl.querySelector('#weekend-ex-target');
+        const setsIn = formEl.querySelector('#weekend-ex-sets');
+        const repsIn = formEl.querySelector('#weekend-ex-reps');
+
+        const name = nameIn.value.trim();
+        if (!name) {
+          nameIn.focus();
+          return;
+        }
+
+        MareEditor.addWeekendExercise(day, {
+          name,
+          target: targetIn.value.trim() || 'General Focus',
+          sets: parseInt(setsIn.value, 10) || 3,
+          reps: repsIn.value.trim() || '10'
+        });
+
+        renderWorkouts();
+      });
+    }
+  }
+
+  // ── Weekend Training Screen with Scale-up Reveal & Revert ──
+  function renderWeekendTraining(container, exercises, dayMeta, day) {
+    const isSat = day === 'sat';
+    const dayLabel = isSat ? 'Saturday' : 'Sunday';
+
+    const headerBar = document.createElement('div');
+    headerBar.className = 'weekend-training-header';
+    headerBar.innerHTML = `
+      <div class="weekend-training-badge">Customized ${dayLabel}</div>
+      <button class="weekend-revert-btn" data-day="${day}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+          <path d="M3 3v5h5"/>
+        </svg>
+        Back to Rest Day
+      </button>
+    `;
+    container.appendChild(headerBar);
+
+    exercises.forEach((ex, i) => {
+      const card = createExerciseCard(ex, i, MareEditor.getActiveVolume(), day);
+      card.style.opacity = '0';
+      card.style.transform = 'scale(0.92) translateY(10px)';
+      container.appendChild(card);
+      setTimeout(() => {
+        card.style.transition = 'opacity 320ms cubic-bezier(0.2, 0.9, 0.3, 1), transform 320ms cubic-bezier(0.2, 0.9, 0.3, 1)';
+        card.style.opacity = '1';
+        card.style.transform = 'scale(1) translateY(0)';
+      }, 50 * i);
+    });
+
+    headerBar.querySelector('.weekend-revert-btn').addEventListener('click', () => {
+      MareEditor.clearWeekendExercises(day);
+      renderWorkouts();
+    });
   }
 
   // ── Exercise Card with Hero Media & Skeleton Shimmer ──
@@ -612,6 +739,7 @@ const MareApp = (function () {
 
       <div class="settings-group">
         <p class="settings-credit">MARE • Atelier — Dedicated Training Companion</p>
+        <p class="settings-love-signature">This app was made with lots of love from your boyfriend</p>
       </div>
     `;
 

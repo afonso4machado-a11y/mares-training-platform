@@ -198,6 +198,41 @@ const MareEditor = (function () {
     return true;
   }
 
+  // ── Weekend Day Management ──
+  function getWeekendExercises(dayId) {
+    if (!['sat', 'sun'].includes(dayId)) return [];
+    if (state.customDays[dayId] && state.customDays[dayId].exercises) {
+      return JSON.parse(JSON.stringify(state.customDays[dayId].exercises));
+    }
+    return [];
+  }
+
+  function addWeekendExercise(dayId, exData) {
+    if (!['sat', 'sun'].includes(dayId)) return;
+    if (!state.customDays[dayId]) {
+      state.customDays[dayId] = { exercises: [] };
+    }
+    const id = 'weekend_' + dayId + '_' + Date.now();
+    state.customDays[dayId].exercises.push({
+      id,
+      name: exData.name || 'Exercise',
+      target: exData.target || 'General',
+      sets: Number(exData.sets) || 3,
+      reps: String(exData.reps || '10'),
+      repUnit: 'reps',
+      image: null
+    });
+    save();
+  }
+
+  function clearWeekendExercises(dayId) {
+    if (!['sat', 'sun'].includes(dayId)) return;
+    if (state.customDays[dayId]) {
+      state.customDays[dayId] = { exercises: [] };
+      save();
+    }
+  }
+
   // ── Customize View Renderer ──
   function renderCustomizeView(containerEl) {
     if (!containerEl) return;
@@ -207,7 +242,9 @@ const MareEditor = (function () {
       { id: 'tue', name: 'Tuesday' },
       { id: 'wed', name: 'Wednesday' },
       { id: 'thu', name: 'Thursday' },
-      { id: 'fri', name: 'Friday' }
+      { id: 'fri', name: 'Friday' },
+      { id: 'sat', name: 'Saturday' },
+      { id: 'sun', name: 'Sunday' }
     ];
 
     let selectedDay = 'mon';
@@ -246,6 +283,45 @@ const MareEditor = (function () {
       if (selectedDay === 'wed') {
         listEl.innerHTML = '<p class="empty-state">Wednesday is dedicated to low-impact cardio and recovery.</p>';
         if (formBox) formBox.classList.add('hidden');
+        return;
+      }
+
+      // Weekend days use dedicated weekend storage
+      if (selectedDay === 'sat' || selectedDay === 'sun') {
+        if (formBox) formBox.classList.remove('hidden');
+        const wkExs = getWeekendExercises(selectedDay);
+        if (!wkExs || wkExs.length === 0) {
+          listEl.innerHTML = '<p class="empty-state">No exercises — this day is currently in Rest Mode. Use the form below to add optional exercises.</p>';
+          return;
+        }
+        listEl.innerHTML = wkExs.map((ex, i) => `
+          <div class="editor-exercise-row" data-id="${ex.id}">
+            <span class="editor-ex-number">${i + 1}</span>
+            <div class="editor-ex-info">
+              <span class="editor-ex-name">${ex.name}</span>
+              <span class="editor-ex-sub">${ex.target || 'General'} &middot; ${ex.sets} &times; ${ex.reps}</span>
+            </div>
+            <div class="editor-ex-actions">
+              <button class="editor-action-btn editor-delete-btn" data-action="remove-weekend" data-id="${ex.id}" aria-label="Delete exercise">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        `).join('');
+        listEl.querySelectorAll('[data-action="remove-weekend"]').forEach((btn) => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const exId = btn.dataset.id;
+            const current = getWeekendExercises(selectedDay);
+            if (state.customDays[selectedDay]) {
+              state.customDays[selectedDay].exercises = current.filter((e) => e.id !== exId);
+              save();
+            }
+            renderExerciseList();
+          });
+        });
         return;
       }
 
@@ -332,12 +408,21 @@ const MareEditor = (function () {
           return;
         }
 
-        addExercise(selectedDay, {
-          name,
-          target: targetInput.value.trim(),
-          sets: parseInt(setsInput.value, 10) || 3,
-          reps: repsInput.value.trim() || '10'
-        });
+        if (selectedDay === 'sat' || selectedDay === 'sun') {
+          addWeekendExercise(selectedDay, {
+            name,
+            target: targetInput.value.trim(),
+            sets: parseInt(setsInput.value, 10) || 3,
+            reps: repsInput.value.trim() || '10'
+          });
+        } else {
+          addExercise(selectedDay, {
+            name,
+            target: targetInput.value.trim(),
+            sets: parseInt(setsInput.value, 10) || 3,
+            reps: repsInput.value.trim() || '10'
+          });
+        }
 
         nameInput.value = '';
         targetInput.value = '';
@@ -366,6 +451,9 @@ const MareEditor = (function () {
     moveExercise,
     addExercise,
     removeExercise,
+    getWeekendExercises,
+    addWeekendExercise,
+    clearWeekendExercises,
     setNote,
     getNote,
     setActiveVolume,
