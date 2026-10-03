@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mare-v2';
+const CACHE_NAME = 'mare-v3';
 
 const BASE_ASSETS = [
   './',
@@ -35,8 +35,20 @@ const PLAN_B_IMAGES = [
 ];
 
 const PLAN_A_IMAGES = [
+  'push_1_crossbody_raise.jpg', 'push_2_db_chest_press.jpg',
+  'push_3_db_shoulder_press.jpg', 'push_4_db_lateral_raise.jpg',
+  'push_5_skull_crushers.jpg', 'push_6_hammer_front_raise.jpg',
+  'push_7_cable_rope_pushdown.jpg',
+  'leg_1_leg_press.jpg', 'leg_2_barbell_hip_thrust.jpg',
+  'leg_3_kas_glute_bridge.jpg', 'leg_4_dumbbell_rdl.jpg',
+  'leg_5_back_extension.jpg', 'leg_6_reverse_lunges.jpg',
+  'pull_1_lat_pulldown.jpg', 'pull_2_single_arm_cable_row.jpg',
+  'pull_3_seated_cable_row.jpg', 'pull_4_isometric_bicep_curl.jpg',
+  'pull_5_bent_over_row.jpg', 'pull_6_hammer_curls.jpg',
   'goblet_squat.png', 'leg_extension.png',
-  'split_squat.png', 'hip_adduction.png'
+  'split_squat.png', 'hip_adduction.png',
+  'abs_1_pullover_crunch.jpg', 'abs_2_weighted_situp.jpg',
+  'abs_3_russian_twist.jpg'
 ];
 
 const IMAGE_ASSETS = [

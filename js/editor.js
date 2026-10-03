@@ -1,7 +1,7 @@
 /**
- * MARE Atelier — Editor Module
- * Handles workout customization: exercise reordering, sister-exercise swapping,
- * adding custom exercises, and personal notes.
+ * MARE Atelier — Editor Module (v2 Custom Routine Engine)
+ * Handles routine customization: exercise reordering, sister-exercise swapping,
+ * adding custom exercises, and personal notes with zero dead clicks.
  */
 const MareEditor = (function () {
   'use strict';
@@ -23,7 +23,7 @@ const MareEditor = (function () {
         const parsed = JSON.parse(raw);
         state = { ...state, ...parsed };
       } catch (e) {
-        console.warn('MareEditor: failed to parse saved state');
+        console.warn('MareEditor: corrupt state, resetting');
       }
     }
   }
@@ -56,18 +56,18 @@ const MareEditor = (function () {
     return null;
   }
 
-  // ── Exercise Swap (Bi-directional sister swap) ──
+  // ── Bi-directional Sister Exercise Swap ──
   function swapExercise(exerciseId) {
     if (!window.MARE_DATA || !MARE_DATA.sisterMap) return false;
 
-    // Check if this exercise was swapped directly as a key
+    // Direct key swap toggle
     if (state.swappedExercises[exerciseId]) {
       delete state.swappedExercises[exerciseId];
       save();
       return true;
     }
 
-    // Check if this exercise was the target of a previous swap
+    // Origin swap toggle
     for (const originId in state.swappedExercises) {
       if (state.swappedExercises[originId] === exerciseId) {
         delete state.swappedExercises[originId];
@@ -76,7 +76,7 @@ const MareEditor = (function () {
       }
     }
 
-    // New swap
+    // Fresh swap
     const sisterId = MARE_DATA.sisterMap[exerciseId];
     if (!sisterId) return false;
     state.swappedExercises[exerciseId] = sisterId;
@@ -110,7 +110,7 @@ const MareEditor = (function () {
     const newEx = {
       id: id,
       name: exData.name || 'Custom Exercise',
-      target: exData.target || 'General Focus',
+      target: exData.target || 'General Muscle Focus',
       sets: Number(exData.sets) || 3,
       reps: String(exData.reps || '10'),
       repUnit: exData.repUnit || 'reps',
@@ -159,7 +159,7 @@ const MareEditor = (function () {
     return state.activeVolume;
   }
 
-  // ── Get Effective Day (Primary routine provider) ──
+  // ── Get Effective Day (Primary routine provider for Workouts) ──
   function getEffectiveDay(dayId) {
     let baseExercises;
 
@@ -223,10 +223,10 @@ const MareEditor = (function () {
 
         <div id="editor-exercise-list" class="editor-exercise-list"></div>
 
-        <div class="editor-add-form">
+        <div class="editor-add-form" id="editor-form-box">
           <h3 class="editor-form-title">Add Exercise</h3>
-          <input type="text" id="add-ex-name" class="editor-input" placeholder="Exercise name" />
-          <input type="text" id="add-ex-target" class="editor-input" placeholder="Target muscle group" />
+          <input type="text" id="add-ex-name" class="editor-input" placeholder="Exercise name" autocomplete="off" />
+          <input type="text" id="add-ex-target" class="editor-input" placeholder="Target muscle group" autocomplete="off" />
           <div class="editor-input-row">
             <input type="number" id="add-ex-sets" class="editor-input editor-input-small" placeholder="Sets" value="3" min="1" max="10" />
             <input type="text" id="add-ex-reps" class="editor-input editor-input-small" placeholder="Reps (e.g. 10 or 8-12)" value="10" />
@@ -234,44 +234,51 @@ const MareEditor = (function () {
           <button class="btn-primary editor-add-btn" id="editor-add-btn">Add to Routine</button>
         </div>
 
-        <button class="btn-outline btn-danger editor-reset-btn" id="editor-reset-btn">Reset All to Factory Defaults</button>
+        <button class="btn-outline btn-danger editor-reset-btn" id="editor-reset-btn">Reset All Customizations</button>
       </div>
     `;
 
     function renderExerciseList() {
       const listEl = containerEl.querySelector('#editor-exercise-list');
+      const formBox = containerEl.querySelector('#editor-form-box');
       if (!listEl) return;
 
       if (selectedDay === 'wed') {
-        listEl.innerHTML = '<p class="empty-state">Wednesday is dedicated to recovery and cardio sessions.</p>';
+        listEl.innerHTML = '<p class="empty-state">Wednesday is dedicated to low-impact cardio and recovery.</p>';
+        if (formBox) formBox.classList.add('hidden');
         return;
       }
 
-      const exercises = getEffectiveDay(selectedDay);
+      if (formBox) formBox.classList.remove('hidden');
+
+      // Ensure custom day object exists when viewing in customize mode
+      ensureCustomDay(selectedDay);
+      const exercises = state.customDays[selectedDay].exercises;
+
       if (!exercises || exercises.length === 0) {
-        listEl.innerHTML = '<p class="empty-state">No exercises found for this day.</p>';
+        listEl.innerHTML = '<p class="empty-state">No exercises configured for this day. Use the form below to add an exercise.</p>';
         return;
       }
 
       listEl.innerHTML = exercises.map((ex, i) => `
-        <div class="editor-exercise-row">
+        <div class="editor-exercise-row" data-id="${ex.id}">
           <span class="editor-ex-number">${i + 1}</span>
           <div class="editor-ex-info">
             <span class="editor-ex-name">${ex.name}</span>
-            <span class="editor-ex-sub">${ex.target || ''} &middot; ${ex.sets} &times; ${ex.reps}</span>
+            <span class="editor-ex-sub">${ex.target || 'General'} &middot; ${ex.sets} &times; ${ex.reps}</span>
           </div>
           <div class="editor-ex-actions">
-            <button class="editor-action-btn" data-action="up" data-index="${i}" ${i === 0 ? 'disabled' : ''} aria-label="Move up">
+            <button class="editor-action-btn btn-move-up" data-action="up" data-index="${i}" ${i === 0 ? 'disabled' : ''} aria-label="Move exercise up">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="18 15 12 9 6 15"/>
               </svg>
             </button>
-            <button class="editor-action-btn" data-action="down" data-index="${i}" ${i === exercises.length - 1 ? 'disabled' : ''} aria-label="Move down">
+            <button class="editor-action-btn btn-move-down" data-action="down" data-index="${i}" ${i === exercises.length - 1 ? 'disabled' : ''} aria-label="Move exercise down">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="6 9 12 15 18 9"/>
               </svg>
             </button>
-            <button class="editor-action-btn editor-delete-btn" data-action="remove" data-id="${ex.id}" aria-label="Remove exercise">
+            <button class="editor-action-btn editor-delete-btn" data-action="remove" data-id="${ex.id}" aria-label="Delete exercise">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"/>
                 <line x1="6" y1="6" x2="18" y2="18"/>
@@ -281,8 +288,10 @@ const MareEditor = (function () {
         </div>
       `).join('');
 
+      // Bind actions with direct delegation
       listEl.querySelectorAll('.editor-action-btn').forEach((btn) => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
           const action = btn.dataset.action;
           if (action === 'up') {
             const idx = parseInt(btn.dataset.index, 10);
@@ -298,6 +307,7 @@ const MareEditor = (function () {
       });
     }
 
+    // Day chip selector
     containerEl.querySelectorAll('.editor-day-chip').forEach((chip) => {
       chip.addEventListener('click', () => {
         selectedDay = chip.dataset.day;
@@ -307,6 +317,7 @@ const MareEditor = (function () {
       });
     });
 
+    // Add exercise form submission
     const addBtn = containerEl.querySelector('#editor-add-btn');
     if (addBtn) {
       addBtn.addEventListener('click', () => {
@@ -316,7 +327,10 @@ const MareEditor = (function () {
         const repsInput = containerEl.querySelector('#add-ex-reps');
 
         const name = nameInput.value.trim();
-        if (!name) return;
+        if (!name) {
+          nameInput.focus();
+          return;
+        }
 
         addExercise(selectedDay, {
           name,
@@ -331,10 +345,11 @@ const MareEditor = (function () {
       });
     }
 
+    // Reset button
     const resetBtn = containerEl.querySelector('#editor-reset-btn');
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
-        if (confirm('Reset all custom modifications and reorders to original plans? Logged workout history will be retained.')) {
+        if (confirm('Reset all custom modifications and reorders to original plans? Logged workout history will be preserved.')) {
           resetToDefaults();
           renderExerciseList();
         }

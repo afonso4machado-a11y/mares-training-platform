@@ -1,6 +1,6 @@
 /**
- * MARE Atelier — App Controller
- * Handles view routing, shared-element transitions, parallax, modal sheets, and event coordination.
+ * MARE Atelier — App Controller (v2 Matte 3D & Day-Aware)
+ * Handles view routing, day-aware auto-selection, physical transitions, and modal sheets.
  */
 const MareApp = (function () {
   'use strict';
@@ -14,27 +14,29 @@ const MareApp = (function () {
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => document.querySelectorAll(sel);
 
-  // ── Day Map ──
-  const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri'];
-  const DAY_NAMES = { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday' };
-  const TODAY_INDEX = (() => {
-    const d = new Date().getDay();
-    // 0=Sun, 1=Mon..5=Fri, 6=Sat
-    if (d >= 1 && d <= 5) return d - 1;
-    return 0; // Default to Monday on weekends
-  })();
+  // ── 7-Day Week Mapping ──
+  const DAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+  const DAY_NAMES = {
+    sun: 'Sunday',
+    mon: 'Monday',
+    tue: 'Tuesday',
+    wed: 'Wednesday',
+    thu: 'Thursday',
+    fri: 'Friday',
+    sat: 'Saturday'
+  };
 
-  // ── Helpers ──
+  function getTodayKey() {
+    const dayIdx = new Date().getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+    return DAYS[dayIdx];
+  }
+
   function getTodayString() {
     const d = new Date();
     return d.toISOString().split('T')[0];
   }
 
-  function getDayOfWeek() {
-    return DAYS[TODAY_INDEX];
-  }
-
-  // ── View Router ──
+  // ── View Router with Physical Shared-Element Zoom ──
   function navigateTo(viewId, triggerEl) {
     if (transitionLock || viewId === currentView) return;
     transitionLock = true;
@@ -44,11 +46,10 @@ const MareApp = (function () {
 
     if (!toView) { transitionLock = false; return; }
 
-    // Shared element transition from home cards
+    // Physical card zoom transition from home
     if (currentView === 'home' && triggerEl) {
       const rect = triggerEl.getBoundingClientRect();
 
-      // Create transition clone
       const clone = triggerEl.cloneNode(true);
       clone.classList.add('card-transitioning');
       clone.style.position = 'fixed';
@@ -56,19 +57,16 @@ const MareApp = (function () {
       clone.style.left = rect.left + 'px';
       clone.style.width = rect.width + 'px';
       clone.style.height = rect.height + 'px';
-      clone.style.zIndex = '999';
       clone.style.margin = '0';
       document.body.appendChild(clone);
 
-      // Animate clone to full screen
       requestAnimationFrame(() => {
-        clone.style.transition = 'all 380ms cubic-bezier(0.32, 0.72, 0, 1)';
         clone.style.top = '0';
         clone.style.left = '0';
         clone.style.width = '100vw';
         clone.style.height = '100vh';
         clone.style.borderRadius = '0';
-        clone.style.opacity = '0.15';
+        clone.style.opacity = '0.08';
       });
 
       setTimeout(() => {
@@ -83,15 +81,16 @@ const MareApp = (function () {
         setTimeout(() => {
           toView.classList.remove('view-entering');
           transitionLock = false;
-        }, 320);
-      }, 350);
+        }, 340);
+      }, 360);
     } else {
-      // Fade transition for back navigation
+      // Physical exit transition for back navigation
       fromView.classList.add('view-exiting');
 
       setTimeout(() => {
         fromView.classList.remove('view-active', 'view-exiting');
-        toView.classList.add('view-active', 'view-entering');
+        toView.classList.add('view-active');
+        toView.classList.add('view-entering');
         currentView = viewId;
 
         if (viewId === 'home') {
@@ -104,8 +103,8 @@ const MareApp = (function () {
         setTimeout(() => {
           toView.classList.remove('view-entering');
           transitionLock = false;
-        }, 320);
-      }, 180);
+        }, 340);
+      }, 190);
     }
   }
 
@@ -115,15 +114,15 @@ const MareApp = (function () {
 
   // ── Home Screen ──
   function renderHome() {
-    const todayDay = getDayOfWeek();
+    const todayKey = getTodayKey();
     const volume = MareEditor.getActiveVolume();
     const volKey = volume === 'custom' ? 'vol1' : volume;
     const volData = MARE_DATA.volumes[volKey];
-    const dayData = volData ? volData.days[todayDay] : null;
+    const dayData = volData ? volData.days[todayKey] : null;
 
     const todayLabel = $('#home-today-label');
     if (todayLabel && dayData) {
-      todayLabel.textContent = DAY_NAMES[todayDay] + ' — ' + dayData.title;
+      todayLabel.textContent = DAY_NAMES[todayKey] + ' — ' + dayData.title;
     }
   }
 
@@ -131,16 +130,16 @@ const MareApp = (function () {
     const cards = $$('.home-card');
     cards.forEach((card, i) => {
       card.style.opacity = '0';
-      card.style.transform = 'translateY(16px)';
+      card.style.transform = 'translateY(20px) scale(0.96)';
       setTimeout(() => {
-        card.style.transition = 'opacity 400ms ease-out, transform 400ms ease-out';
+        card.style.transition = 'opacity 450ms cubic-bezier(0.2, 0.9, 0.3, 1), transform 450ms cubic-bezier(0.2, 0.9, 0.3, 1)';
         card.style.opacity = '1';
-        card.style.transform = 'translateY(0)';
+        card.style.transform = 'translateY(0) scale(1)';
       }, 70 * i);
     });
   }
 
-  // ── Parallax (Gyroscope) ──
+  // ── Parallax ──
   function initParallax() {
     if (!window.DeviceOrientationEvent) return;
 
@@ -158,9 +157,11 @@ const MareApp = (function () {
     }, { passive: true });
   }
 
-  // ── Workouts View ──
+  // ── Workouts View (Day-Aware Auto Routing) ──
   function onViewEnter(viewId) {
     if (viewId === 'workouts') {
+      // Automatically default to today's day of week on entry
+      activeDay = getTodayKey();
       renderWorkouts();
     } else if (viewId === 'log') {
       renderLog();
@@ -173,7 +174,7 @@ const MareApp = (function () {
 
   function renderWorkouts() {
     const volume = MareEditor.getActiveVolume();
-    const day = activeDay || getDayOfWeek();
+    const day = activeDay || getTodayKey();
     activeDay = day;
 
     // Update volume toggle buttons
@@ -181,9 +182,13 @@ const MareApp = (function () {
       btn.classList.toggle('active', btn.dataset.volume === volume);
     });
 
-    // Update day chips
-    $$('.day-chip').forEach((chip) => {
-      chip.classList.toggle('active', chip.dataset.day === day);
+    // Update day chips & scroll active day chip into center view
+    $$('#workout-weekday-track .day-chip').forEach((chip) => {
+      const isAct = chip.dataset.day === day;
+      chip.classList.toggle('active', isAct);
+      if (isAct) {
+        chip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
     });
 
     const volKey = volume === 'custom' ? 'vol1' : volume;
@@ -200,11 +205,19 @@ const MareApp = (function () {
 
     listEl.innerHTML = '';
 
+    // Handle Weekend Days (Saturday & Sunday)
+    if (day === 'sat' || day === 'sun') {
+      renderWeekendCard(listEl, dayMeta);
+      return;
+    }
+
+    // Handle Wednesday Cardio
     if (dayMeta && dayMeta.type === 'cardio') {
       renderCardioDay(listEl, dayMeta, volKey);
       return;
     }
 
+    // Strength Days
     const exercises = MareEditor.getEffectiveDay(day);
 
     if (!exercises || exercises.length === 0) {
@@ -224,30 +237,77 @@ const MareApp = (function () {
     const cards = listEl.querySelectorAll('.exercise-card');
     cards.forEach((card, i) => {
       card.style.opacity = '0';
-      card.style.transform = 'translateY(10px)';
+      card.style.transform = 'translateY(14px)';
       setTimeout(() => {
-        card.style.transition = 'opacity 250ms ease-out, transform 250ms ease-out';
+        card.style.transition = 'opacity 300ms cubic-bezier(0.2, 0.9, 0.3, 1), transform 300ms cubic-bezier(0.2, 0.9, 0.3, 1)';
         card.style.opacity = '1';
         card.style.transform = 'translateY(0)';
-      }, 40 * i);
+      }, 50 * i);
     });
   }
 
+  // ── Weekend Rest Screen (3D Solid Breathing Sphere) ──
+  function renderWeekendCard(container, dayMeta) {
+    const isSat = dayMeta.id.includes('sat');
+    const wrap = document.createElement('div');
+    wrap.className = 'weekend-rest-container';
+
+    wrap.innerHTML = `
+      <div class="weekend-rest-card">
+        <div class="breathing-sphere-wrap">
+          <div class="breathing-sphere"></div>
+        </div>
+        <h3 class="weekend-rest-title">${dayMeta.title}</h3>
+        <p class="weekend-rest-focus">${dayMeta.focus}</p>
+        <p class="weekend-rest-desc">${dayMeta.intro || 'Allow muscle fibers to repair, restore glycogen reserves, and replenish central nervous system energy for the upcoming training week.'}</p>
+        <div class="weekend-pillars">
+          <div class="pillar-item">
+            <div class="pillar-title">Hydration & Salt</div>
+            <p class="pillar-text">Maintain mineral balance and fluid intake to speed recovery.</p>
+          </div>
+          <div class="pillar-item">
+            <div class="pillar-title">Deep Sleep</div>
+            <p class="pillar-text">8-9 hours of restorative sleep to trigger growth hormone release.</p>
+          </div>
+          <div class="pillar-item">
+            <div class="pillar-title">Mobility Walk</div>
+            <p class="pillar-text">20-30 min gentle walk to promote blood flow without fatigue.</p>
+          </div>
+          <div class="pillar-item">
+            <div class="pillar-title">Preparation</div>
+            <p class="pillar-text">Review upcoming Monday Push session and prepare your schedule.</p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    container.appendChild(wrap);
+  }
+
+  // ── Exercise Card with Hero Media & Skeleton Shimmer ──
   function createExerciseCard(ex, index, volume, day) {
     const card = document.createElement('div');
     card.className = 'exercise-card';
     card.dataset.exerciseId = ex.id;
 
     const imgSrc = ex.image ? 'images/' + ex.image : '';
-    const imgHtml = imgSrc
-      ? `<div class="ex-thumb-wrapper" data-ex-img="${imgSrc}" data-ex-title="${ex.name}" data-ex-target="${ex.target || ''}" data-ex-notes="${ex.notes || ''}">
-           <img class="ex-thumb" src="${imgSrc}" alt="${ex.name}" loading="lazy" />
-         </div>`
-      : `<div class="ex-thumb-wrapper ex-thumb-placeholder">
-           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-             <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
-           </svg>
-         </div>`;
+    
+    let mediaHtml = '';
+    if (imgSrc) {
+      mediaHtml = `
+        <div class="ex-media-hero skeleton-shimmer" data-ex-img="${imgSrc}" data-ex-title="${ex.name}" data-ex-target="${ex.target || ''}" data-ex-notes="${ex.notes || ''}">
+          <img class="img-loading" src="${imgSrc}" alt="${ex.name}" loading="lazy" />
+        </div>
+      `;
+    } else {
+      mediaHtml = `
+        <div class="ex-media-hero placeholder">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+          </svg>
+        </div>
+      `;
+    }
 
     const setsCount = Number(ex.sets) || 3;
     const noteHtml = ex.notes ? `<p class="ex-note">${ex.notes}</p>` : '';
@@ -256,11 +316,11 @@ const MareApp = (function () {
     const supersetHtml = ex.supersetWith ? '<span class="ex-badge badge-superset">Superset</span>' : '';
     const circuitHtml = ex.isCircuit ? '<span class="ex-badge badge-circuit">Circuit</span>' : '';
 
-    // Sister swap button (clean SVG exchange icon)
+    // Sister exercise swap button (SVG exchange arrows)
     const hasSister = MARE_DATA.sisterMap && (MARE_DATA.sisterMap[ex.id] || MARE_DATA.sisterMap[ex._originalId]);
     const swapHtml = hasSister ? `
-      <button class="ex-swap-btn" data-exercise="${ex.id}" aria-label="Swap with alternative exercise" title="Swap exercise">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <button class="ex-swap-btn" data-exercise="${ex.id}" aria-label="Swap exercise with counterpart">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="17 1 21 5 17 9"/>
           <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
           <polyline points="7 23 3 19 7 15"/>
@@ -269,11 +329,11 @@ const MareApp = (function () {
       </button>` : '';
 
     card.innerHTML = `
-      <div class="ex-header">
-        ${imgHtml}
-        <div class="ex-info">
+      ${mediaHtml}
+      <div class="ex-content-body">
+        <div class="ex-info-block">
           <div class="ex-title-row">
-            <span class="ex-number">${index + 1}</span>
+            <span class="ex-number-tag">#${index + 1}</span>
             <h3 class="ex-name">${ex.name}</h3>
             ${supersetHtml}${circuitHtml}
           </div>
@@ -281,7 +341,7 @@ const MareApp = (function () {
           ${noteHtml}
           ${personalNoteHtml}
         </div>
-        <div class="ex-meta">
+        <div class="ex-meta-actions">
           <span class="ex-prescription">${ex.sets || ''} &times; ${ex.reps || ''}</span>
           <span class="ex-rep-unit">${ex.repUnit || 'reps'}</span>
           ${swapHtml}
@@ -290,7 +350,24 @@ const MareApp = (function () {
       <div class="ex-sets-container" id="sets-${ex.id}"></div>
     `;
 
-    // Render set tracking grid with current volume and day
+    // Skeleton shimmer removal on image load
+    const imgEl = card.querySelector('.ex-media-hero img');
+    const heroWrap = card.querySelector('.ex-media-hero');
+    if (imgEl && heroWrap) {
+      if (imgEl.complete) {
+        imgEl.classList.remove('img-loading');
+        imgEl.classList.add('img-loaded');
+        heroWrap.classList.remove('skeleton-shimmer');
+      } else {
+        imgEl.addEventListener('load', () => {
+          imgEl.classList.remove('img-loading');
+          imgEl.classList.add('img-loaded');
+          heroWrap.classList.remove('skeleton-shimmer');
+        });
+      }
+    }
+
+    // Render set tracking grid
     const setsContainer = card.querySelector('.ex-sets-container');
     if (setsContainer && !ex.isCircuit) {
       MareTracker.renderSets(ex.id, setsContainer, setsCount, volume, day);
@@ -306,10 +383,9 @@ const MareApp = (function () {
       });
     }
 
-    // Tap thumbnail to open photo modal
-    const thumbWrapper = card.querySelector('.ex-thumb-wrapper[data-ex-img]');
-    if (thumbWrapper) {
-      thumbWrapper.addEventListener('click', () => {
+    // Tap hero image to open solid detail modal
+    if (heroWrap && imgSrc) {
+      heroWrap.addEventListener('click', () => {
         openDetailModal({
           name: ex.name,
           target: ex.target || '',
@@ -397,7 +473,7 @@ const MareApp = (function () {
     }
   }
 
-  // ── Exercise Detail Modal ──
+  // ── Solid Detail Modal (iPhone 13 mini Optimized) ──
   function openDetailModal(info) {
     const backdrop = $('#detail-backdrop');
     const sheet = $('#detail-sheet');
@@ -428,7 +504,7 @@ const MareApp = (function () {
     if (sheet) sheet.classList.remove('active');
   }
 
-  // ── Log View ──
+  // ── History View (Strictly Named 'History') ──
   function renderLog() {
     const container = $('#log-content');
     if (!container) return;
@@ -438,7 +514,7 @@ const MareApp = (function () {
     const dates = Object.keys(sessions).sort().reverse();
 
     if (dates.length === 0) {
-      container.innerHTML = '<p class="empty-state">No sessions logged yet. Check off your sets in Workouts to record your history.</p>';
+      container.innerHTML = '<p class="empty-state">No workout history recorded yet. Complete sets in Workouts to populate your archive.</p>';
       return;
     }
 
@@ -448,7 +524,7 @@ const MareApp = (function () {
       const summary = MareTracker.getSessionSummary(date);
 
       const volLabel = session.volume === 'vol1' ? 'Volume I' : session.volume === 'vol2' ? 'Volume II' : 'Custom';
-      const dayLabel = DAY_NAMES[session.day] || 'Training Day';
+      const dayLabel = DAY_NAMES[session.day] || 'Training Session';
 
       html += `
         <div class="log-card">
@@ -575,7 +651,7 @@ const MareApp = (function () {
     const resetBtn = container.querySelector('#btn-reset');
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
-        if (confirm('Reset all custom routine modifications and exercise swaps? Logged session history will be preserved.')) {
+        if (confirm('Reset all custom routine modifications and exercise swaps? Logged workout history will be preserved.')) {
           MareEditor.resetToDefaults();
           alert('Customizations have been reset to factory defaults.');
         }
@@ -640,24 +716,17 @@ const MareApp = (function () {
 
   // ── Init ──
   function init() {
-    // Register Service Worker for offline PWA
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch((err) => {
         console.warn('SW registration failed:', err);
       });
     }
 
-    // Initialize modules
     MareTimer.init();
-
-    // Render home
     renderHome();
     animateHomeCards();
-
-    // Bind events
     bindEvents();
 
-    // Unlock AudioContext and request Gyroscope on first touch
     const unlockHandler = () => {
       if (window.MareTimer && window.MareTimer.unlockAudio) {
         window.MareTimer.unlockAudio();
@@ -680,7 +749,7 @@ const MareApp = (function () {
     navigateTo,
     goHome,
     renderWorkouts,
-    getDayOfWeek,
+    getTodayKey,
     getTodayString
   };
 })();

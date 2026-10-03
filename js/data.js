@@ -11,13 +11,13 @@ const MARE_DATA = {
           accent: 'accent-push',
           type: 'strength',
           exercises: [
-            { id: 'vol1_mon_1', name: 'Dumbbell Crossbody Raises', target: 'Shoulders', sets: 4, reps: '10', repUnit: 'reps', image: null },
-            { id: 'vol1_mon_2', name: 'DB Chest Press', target: 'Chest', sets: 4, reps: '8-10', repUnit: 'reps', image: null },
-            { id: 'vol1_mon_3', name: 'DB Shoulder Press', target: 'Shoulders', sets: 4, reps: '8-10', repUnit: 'reps', image: null },
-            { id: 'vol1_mon_4', name: 'DB Lateral Raises', target: 'Shoulders', sets: 4, reps: '10', repUnit: 'reps', supersetWith: 'vol1_mon_5', image: null },
-            { id: 'vol1_mon_5', name: 'DB Skull Crushers', target: 'Triceps', sets: 4, reps: '10', repUnit: 'reps', supersetWith: 'vol1_mon_4', notes: 'Paired with the lateral raises — no rest between the two.', image: null },
-            { id: 'vol1_mon_6', name: 'Seated Hammer Front Raise', target: 'Shoulders', sets: 3, reps: '10', repUnit: 'reps', image: null },
-            { id: 'vol1_mon_7', name: 'Cable Rope Pushdown', target: 'Triceps', sets: 3, reps: '10', repUnit: 'reps', image: null }
+            { id: 'vol1_mon_1', name: 'Dumbbell Crossbody Raises', target: 'Lateral Deltoids', sets: 4, reps: '10', repUnit: 'reps', image: 'plan_a/push_1_crossbody_raise.jpg' },
+            { id: 'vol1_mon_2', name: 'DB Chest Press', target: 'Pectorals & Front Delts', sets: 4, reps: '8-10', repUnit: 'reps', image: 'plan_a/push_2_db_chest_press.jpg' },
+            { id: 'vol1_mon_3', name: 'DB Shoulder Press', target: 'Shoulders & Triceps', sets: 4, reps: '8-10', repUnit: 'reps', image: 'plan_a/push_3_db_shoulder_press.jpg' },
+            { id: 'vol1_mon_4', name: 'DB Lateral Raises', target: 'Side Deltoids', sets: 4, reps: '10', repUnit: 'reps', supersetWith: 'vol1_mon_5', image: 'plan_a/push_4_db_lateral_raise.jpg' },
+            { id: 'vol1_mon_5', name: 'DB Skull Crushers', target: 'Triceps Isolation', sets: 4, reps: '10', repUnit: 'reps', supersetWith: 'vol1_mon_4', notes: 'Paired with lateral raises — zero rest between exercises.', image: 'plan_a/push_5_skull_crushers.jpg' },
+            { id: 'vol1_mon_6', name: 'Seated Hammer Front Raise', target: 'Anterior Deltoids', sets: 3, reps: '10', repUnit: 'reps', image: 'plan_a/push_6_hammer_front_raise.jpg' },
+            { id: 'vol1_mon_7', name: 'Cable Rope Pushdown', target: 'Triceps (Long Head)', sets: 3, reps: '10', repUnit: 'reps', image: 'plan_a/push_7_cable_rope_pushdown.jpg' }
           ]
         },
         tue: {
@@ -28,28 +28,25 @@ const MARE_DATA = {
           accent: 'accent-legs',
           type: 'strength',
           exercises: [
-            { id: 'vol1_tue_1', name: 'Leg Press', target: 'Quads & Glutes', sets: 4, reps: '10', repUnit: 'reps', image: null },
-            { id: 'vol1_tue_2', name: 'Hip Thrusts', target: 'Glutes', sets: 4, reps: '8', repUnit: 'reps', supersetWith: 'vol1_tue_3', image: null },
-            { id: 'vol1_tue_3', name: 'KAS Glute Bridge', target: 'Glutes', sets: 4, reps: '8', repUnit: 'reps', supersetWith: 'vol1_tue_2', notes: 'Perform directly after hip thrusts with no rest between them.', image: null },
-            { id: 'vol1_tue_4', name: 'Dumbbell RDLs', target: 'Hamstrings & Glutes', sets: 4, reps: '10', repUnit: 'reps', image: null },
-            { id: 'vol1_tue_5', name: 'Glute-Focused Back Extension', target: 'Glutes', sets: 4, reps: '10', repUnit: 'reps', image: null },
-            { id: 'vol1_tue_6', name: 'Deficit Reverse Lunges', target: 'Legs', sets: 4, reps: '8', repUnit: 'reps / leg', image: null }
+            { id: 'vol1_tue_1', name: 'Leg Press', target: 'Quads & Glutes', sets: 4, reps: '10', repUnit: 'reps', image: 'plan_a/leg_1_leg_press.jpg' },
+            { id: 'vol1_tue_2', name: 'Hip Thrusts', target: 'Gluteus Maximus', sets: 4, reps: '8', repUnit: 'reps', supersetWith: 'vol1_tue_3', image: 'plan_a/leg_2_barbell_hip_thrust.jpg' },
+            { id: 'vol1_tue_3', name: 'KAS Glute Bridge', target: 'Upper Glute Isolation', sets: 4, reps: '8', repUnit: 'reps', supersetWith: 'vol1_tue_2', notes: 'Perform directly after hip thrusts with zero rest.', image: 'plan_a/leg_3_kas_glute_bridge.jpg' },
+            { id: 'vol1_tue_4', name: 'Dumbbell RDLs', target: 'Hamstrings & Posterior Chain', sets: 4, reps: '10', repUnit: 'reps', image: 'plan_a/leg_4_dumbbell_rdl.jpg' },
+            { id: 'vol1_tue_5', name: 'Glute-Focused Back Extension', target: 'Glute & Lower Back', sets: 4, reps: '10', repUnit: 'reps', image: 'plan_a/leg_5_back_extension.jpg' },
+            { id: 'vol1_tue_6', name: 'Deficit Reverse Lunges', target: 'Quads & Glutes', sets: 4, reps: '8', repUnit: 'reps / leg', image: 'plan_a/leg_6_reverse_lunges.jpg' }
           ]
         },
         wed: {
           id: 'vol1_wed',
           label: 'Wednesday',
           title: 'Cardio & Recovery',
-          focus: 'Low-impact active recovery session',
+          focus: 'Cardio & Recovery',
           accent: 'accent-cardio',
           type: 'cardio',
-          intro: 'Wednesday is reserved for active recovery and low-intensity movement. Select an option below for 20 to 40 minutes at a steady pace, or take a full rest day.',
+          intro: 'Wednesday is dedicated to gentle, feel-good movement. Choose either option below depending on what you feel like doing today — 20 to 30 minutes at an easy, enjoyable pace. And if you need complete rest, take it!',
           cardioOptions: [
-            { title: 'Brisk Walking', desc: 'Outdoor walk or incline treadmill. Restores blood flow with zero joint stress.', badge: '20-40 min, Steady pace', image: null },
-            { title: 'Stationary Cycling', desc: 'Low-resistance spinning. Flushes leg fatigue and elevates core temperature.', badge: '20-30 min, Light resistance', image: null },
-            { title: 'Swimming', desc: 'Gentle laps or pool walking. Decompresses the spine and loosens tight shoulders.', badge: '20-30 min, Relaxed rhythm', image: null },
-            { title: 'Yoga & Mobility', desc: 'Focused stretching and joint mobilization for hips, hamstrings, and thoracic spine.', badge: '25-35 min, Mat routine', image: null },
-            { title: 'Light Jog', desc: 'Easy aerobic jogging on flat terrain or cushioned treadmill deck.', badge: '20-25 min, Zone 2 heart rate', image: null }
+            { title: 'Treadmill', desc: 'Incline walking or gentle jogging. Great for burning energy with zero joint impact.', badge: '20-30 min, Incline 6-10%, 4.5-5.5 km/h', image: 'plan_b/cardio_1_treadmill.jpg' },
+            { title: 'Stairs / Stairmaster', desc: 'Steady step climbing. Amazing for glute activation and gentle cardiovascular conditioning.', badge: '15-25 min, Moderate, steady rhythm', image: 'plan_b/cardio_2_stairs.jpg' }
           ]
         },
         thu: {
@@ -60,12 +57,12 @@ const MARE_DATA = {
           accent: 'accent-pull',
           type: 'strength',
           exercises: [
-            { id: 'vol1_thu_1', name: 'Lat Pulldown', target: 'Back', sets: 4, reps: '10', repUnit: 'reps', image: null },
-            { id: 'vol1_thu_2', name: 'Single Arm Cable High Row / Pulldown', target: 'Back', sets: 4, reps: '10', repUnit: 'reps', image: null },
-            { id: 'vol1_thu_3', name: 'Seated Neutral Grip Cable Row', target: 'Back', sets: 4, reps: '10', repUnit: 'reps', image: null },
-            { id: 'vol1_thu_4', name: 'Isometric Bicep Curl', target: 'Biceps', sets: 4, reps: '1', repUnit: 'rounds', notes: '5 full reps + 5 lower range + 5 upper range + 5-second hold.', image: null },
-            { id: 'vol1_thu_5', name: 'Bent Over Row (Supinated Grip)', target: 'Back', sets: 4, reps: '10', repUnit: 'reps', image: null },
-            { id: 'vol1_thu_6', name: 'Bent Over Crossbody Hammer Curls', target: 'Biceps', sets: 4, reps: '10', repUnit: 'reps', image: null }
+            { id: 'vol1_thu_1', name: 'Lat Pulldown', target: 'Lats & Upper Back', sets: 4, reps: '10', repUnit: 'reps', image: 'plan_a/pull_1_lat_pulldown.jpg' },
+            { id: 'vol1_thu_2', name: 'Single Arm Cable High Row / Pulldown', target: 'Lat Unilateral', sets: 4, reps: '10', repUnit: 'reps', image: 'plan_a/pull_2_single_arm_cable_row.jpg' },
+            { id: 'vol1_thu_3', name: 'Seated Neutral Grip Cable Row', target: 'Rhomboids & Mid-Back', sets: 4, reps: '10', repUnit: 'reps', image: 'plan_a/pull_3_seated_cable_row.jpg' },
+            { id: 'vol1_thu_4', name: 'Isometric Bicep Curl', target: 'Biceps Peak', sets: 4, reps: '1', repUnit: 'rounds', notes: '5 full reps + 5 lower range + 5 upper range + 5-second hold.', image: 'plan_a/pull_4_isometric_bicep_curl.jpg' },
+            { id: 'vol1_thu_5', name: 'Bent Over Row (Supinated Grip)', target: 'Lats & Biceps', sets: 4, reps: '10', repUnit: 'reps', image: 'plan_a/pull_5_bent_over_row.jpg' },
+            { id: 'vol1_thu_6', name: 'Bent Over Crossbody Hammer Curls', target: 'Brachialis & Forearms', sets: 4, reps: '10', repUnit: 'reps', image: 'plan_a/pull_6_hammer_curls.jpg' }
           ]
         },
         fri: {
@@ -75,16 +72,34 @@ const MARE_DATA = {
           focus: 'Glutes, Quads, Core',
           accent: 'accent-circuit',
           type: 'strength',
-          circuitTip: 'Start Friday session with 10-12 minutes of steady-state cardio before moving into the lower body work. Rest 60-90 seconds between rounds of the ab circuit.',
+          circuitTip: 'Move through the 3 ab exercises back-to-back on your mat, then take 60-90 seconds of rest before starting the next round.',
           exercises: [
-            { id: 'vol1_fri_1', name: 'Goblet Squats', target: 'Lower Body', sets: 3, reps: '12', repUnit: 'reps', image: 'plan_a/goblet_squat.png' },
-            { id: 'vol1_fri_2', name: 'Leg Extension', target: 'Lower Body', sets: 3, reps: '12', repUnit: 'reps', image: 'plan_a/leg_extension.png' },
-            { id: 'vol1_fri_3', name: 'Split Squats', target: 'Lower Body', sets: 3, reps: '12', repUnit: 'reps / leg', image: 'plan_a/split_squat.png' },
-            { id: 'vol1_fri_4', name: 'Hip Adductions', target: 'Lower Body', sets: 3, reps: '12', repUnit: 'reps', image: 'plan_a/hip_adduction.png' },
-            { id: 'vol1_fri_5', name: 'DB Lat Pullover to Suitcase Crunch', target: 'Core', sets: 3, reps: '8', repUnit: 'reps', isCircuit: true, notes: 'No rest between exercises within a round.', image: null },
-            { id: 'vol1_fri_6', name: 'Weighted Sit-up + Extend', target: 'Core', sets: 3, reps: '8', repUnit: 'reps', isCircuit: true, notes: 'No rest between exercises within a round.', image: null },
-            { id: 'vol1_fri_7', name: 'Russian Twist', target: 'Core', sets: 3, reps: '8', repUnit: 'reps', isCircuit: true, notes: 'No rest between exercises within a round.', image: null }
+            { id: 'vol1_fri_1', name: 'Goblet Squats', target: 'Quads & Inner Thighs', sets: 3, reps: '12', repUnit: 'reps', image: 'plan_a/goblet_squat.png' },
+            { id: 'vol1_fri_2', name: 'Leg Extension', target: 'Quadriceps Isolation', sets: 3, reps: '12', repUnit: 'reps', image: 'plan_a/leg_extension.png' },
+            { id: 'vol1_fri_3', name: 'Split Squats', target: 'Glutes & Quads', sets: 3, reps: '12', repUnit: 'reps / leg', image: 'plan_a/split_squat.png' },
+            { id: 'vol1_fri_4', name: 'Hip Adductions', target: 'Inner Thighs (Adductors)', sets: 3, reps: '12', repUnit: 'reps', image: 'plan_a/hip_adduction.png' },
+            { id: 'vol1_fri_5', name: 'DB Lat Pullover to Suitcase Crunch', target: 'Upper & Lower Core', sets: 3, reps: '8', repUnit: 'reps', isCircuit: true, notes: 'No rest between exercises within a round.', image: 'plan_a/abs_1_pullover_crunch.jpg' },
+            { id: 'vol1_fri_6', name: 'Weighted Sit-up + Extend', target: 'Core Anterior', sets: 3, reps: '8', repUnit: 'reps', isCircuit: true, notes: 'No rest between exercises within a round.', image: 'plan_a/abs_2_weighted_situp.jpg' },
+            { id: 'vol1_fri_7', name: 'Russian Twist', target: 'Obliques & Rotation', sets: 3, reps: '8', repUnit: 'reps', isCircuit: true, notes: 'No rest between exercises within a round.', image: 'plan_a/abs_3_russian_twist.jpg' }
           ]
+        },
+        sat: {
+          id: 'vol1_sat',
+          label: 'Saturday',
+          title: 'Rest & Recovery',
+          focus: 'Active recovery, hydration & mobility',
+          accent: 'accent-cardio',
+          type: 'rest',
+          intro: 'Saturday is dedicated to full physical restoration. Hydrate well, take a gentle walk outside if you wish, and let your muscular system adapt and recover.'
+        },
+        sun: {
+          id: 'vol1_sun',
+          label: 'Sunday',
+          title: 'Rest & Reset',
+          focus: 'Full nervous system recovery & prep',
+          accent: 'accent-cardio',
+          type: 'rest',
+          intro: 'Sunday completes the weekly training cycle. Prioritize restorative rest, quality sleep, and prepare your body for Monday Push session.'
         }
       }
     },
@@ -128,13 +143,13 @@ const MARE_DATA = {
           id: 'vol2_wed',
           label: 'Wednesday',
           title: 'Cardio & Recovery',
-          focus: 'Low-impact active recovery session',
+          focus: 'Cardio & Recovery',
           accent: 'accent-cardio',
           type: 'cardio',
-          intro: 'Wednesday is reserved for active recovery and low-intensity movement. Choose either option below for 20 to 30 minutes at a steady pace, or take a full rest day.',
+          intro: 'Wednesday is dedicated to gentle, feel-good movement. Choose either option below depending on what you feel like doing today — 20 to 30 minutes at an easy, enjoyable pace. And if you need complete rest, take it!',
           cardioOptions: [
-            { title: 'Treadmill', desc: 'Incline walking or gentle jogging. Steady cardiovascular conditioning with zero joint impact.', badge: '20-30 min, Incline 6-10%, 4.5-5.5 km/h', image: 'plan_b/cardio_1_treadmill.jpg' },
-            { title: 'Stairs / Stairmaster', desc: 'Steady step climbing. Consistent glute activation and aerobic conditioning.', badge: '15-25 min, Moderate rhythm', image: 'plan_b/cardio_2_stairs.jpg' }
+            { title: 'Treadmill', desc: 'Incline walking or gentle jogging. Great for burning energy with zero joint impact.', badge: '20-30 min, Incline 6-10%, 4.5-5.5 km/h', image: 'plan_b/cardio_1_treadmill.jpg' },
+            { title: 'Stairs / Stairmaster', desc: 'Steady step climbing. Amazing for glute activation and gentle cardiovascular conditioning.', badge: '15-25 min, Moderate, steady rhythm', image: 'plan_b/cardio_2_stairs.jpg' }
           ]
         },
         thu: {
@@ -160,7 +175,7 @@ const MARE_DATA = {
           focus: 'Glutes, Legs, Core Finish',
           accent: 'accent-circuit',
           type: 'strength',
-          circuitTip: 'Move through the 3 ab exercises back-to-back on your mat, then rest 60-90 seconds before starting the next round.',
+          circuitTip: 'Move through the 3 ab exercises back-to-back on your mat, then take 60-90 seconds of rest before starting the next round.',
           exercises: [
             { id: 'vol2_fri_1', name: 'Dumbbell Sumo Squat', target: 'Inner Thighs & Glutes', sets: 3, reps: '12', repUnit: 'reps', image: 'plan_b/lower_1_sumo_squat.png' },
             { id: 'vol2_fri_2', name: 'Seated Machine Leg Press', target: 'Quads & Glutes', sets: 3, reps: '12', repUnit: 'reps', image: 'plan_b/lower_2_seated_leg_press.png' },
@@ -170,6 +185,24 @@ const MARE_DATA = {
             { id: 'vol2_fri_6', name: 'Bicycle Crunches', target: 'Obliques & Core', sets: 3, reps: '12', repUnit: 'total reps', isCircuit: true, image: 'plan_b/abs_2_bicycle_crunches.jpg' },
             { id: 'vol2_fri_7', name: 'Forearm Plank Hold', target: 'Core Pillar', sets: 3, reps: '30-45s', repUnit: 'hold', isCircuit: true, image: 'plan_b/abs_3_forearm_plank.jpg' }
           ]
+        },
+        sat: {
+          id: 'vol2_sat',
+          label: 'Saturday',
+          title: 'Rest & Recovery',
+          focus: 'Active recovery, hydration & mobility',
+          accent: 'accent-cardio',
+          type: 'rest',
+          intro: 'Saturday is dedicated to full physical restoration. Hydrate well, take a gentle walk outside if you wish, and let your muscular system adapt and recover.'
+        },
+        sun: {
+          id: 'vol2_sun',
+          label: 'Sunday',
+          title: 'Rest & Reset',
+          focus: 'Full nervous system recovery & prep',
+          accent: 'accent-cardio',
+          type: 'rest',
+          intro: 'Sunday completes the weekly training cycle. Prioritize restorative rest, quality sleep, and prepare your body for Monday Push session.'
         }
       }
     }
