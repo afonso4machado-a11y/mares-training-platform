@@ -933,11 +933,6 @@ const MareApp = (function () {
             <li>Scroll down and select "Add to Home Screen"</li>
             <li>Tap "Add" in the top right corner</li>
           </ol>
-          <p class="install-step"><strong>Android / Chrome:</strong></p>
-          <ol class="install-steps-list">
-            <li>Tap the three-dot menu in Chrome</li>
-            <li>Select "Add to Home screen" or "Install App"</li>
-          </ol>
         </div>
       </div>
 

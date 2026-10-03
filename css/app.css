@@ -1679,6 +1679,10 @@ input {
   margin: 12px 0 4px;
 }
 
+.install-guide .install-step:first-child {
+  margin-top: 0;
+}
+
 .install-step strong {
   color: var(--twilight);
 }

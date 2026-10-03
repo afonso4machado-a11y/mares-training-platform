@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mare-v13';
+const CACHE_NAME = 'mare-v14';
 
 const BASE_ASSETS = [
   './',
