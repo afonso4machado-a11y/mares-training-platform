@@ -86,8 +86,10 @@ const MareTimer = (function () {
   }
 
   function onComplete() {
-    if (navigator.vibrate) {
-      navigator.vibrate([180, 80, 180]);
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try {
+        navigator.vibrate([200, 100, 200]);
+      } catch (e) {}
     }
     playBeep();
     setTimeout(hide, 2000);

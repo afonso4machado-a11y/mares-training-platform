@@ -130,11 +130,11 @@ const MareApp = (function () {
     const cards = $$('.home-card');
     cards.forEach((card, i) => {
       card.style.opacity = '0';
-      card.style.transform = 'translateY(20px) scale(0.96)';
+      card.style.transform = 'perspective(1000px) rotateX(12deg) translateY(24px) scale(0.96)';
       setTimeout(() => {
         card.style.transition = 'opacity 450ms cubic-bezier(0.2, 0.9, 0.3, 1), transform 450ms cubic-bezier(0.2, 0.9, 0.3, 1)';
         card.style.opacity = '1';
-        card.style.transform = 'translateY(0) scale(1)';
+        card.style.transform = '';
       }, 70 * i);
     });
   }
@@ -147,12 +147,15 @@ const MareApp = (function () {
       const cards = $$('.home-card');
       if (!cards.length || currentView !== 'home') return;
 
-      const tiltX = (e.gamma || 0) / 45;
-      const tiltY = (e.beta || 0) / 45;
+      const tiltX = Math.min(Math.max((e.gamma || 0) / 45, -1), 1);
+      const tiltY = Math.min(Math.max((e.beta || 0) / 45, -1), 1);
 
       cards.forEach((card, i) => {
-        const depth = (i + 1) * 2;
-        card.style.transform = `translate3d(${tiltX * depth}px, ${tiltY * depth}px, 0)`;
+        const depth = (i + 1) * 1.5;
+        const baseRotY = (i % 2 === 0 ? -1.2 : 1.2);
+        const rotX = 3.5 - tiltY * 2.5;
+        const rotY = baseRotY + tiltX * 2.5;
+        card.style.transform = `perspective(1000px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg) translate3d(${-(tiltX * depth).toFixed(1)}px, ${-(tiltY * depth).toFixed(1)}px, 0)`;
       });
     }, { passive: true });
   }

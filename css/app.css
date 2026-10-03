@@ -173,7 +173,9 @@ input {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-  padding: 0 4px;
+  padding: 8px 4px 20px;
+  perspective: 1200px;
+  transform-style: preserve-3d;
 }
 
 @media (max-width: 340px) {
@@ -185,22 +187,32 @@ input {
   height: 175px;
   border-radius: 16px;
   padding: 24px 16px;
-  box-shadow: var(--shadow-plate);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
   cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1), box-shadow 0.22s ease;
+  border: 1px solid var(--border);
+  box-shadow: 
+    inset 0 1.5px 0 rgba(255, 255, 255, 1),
+    inset 0 -3px 0 #e2dad2,
+    0 2px 4px rgba(22, 19, 34, 0.04),
+    0 8px 16px -2px rgba(22, 19, 34, 0.09),
+    0 18px 28px -6px rgba(22, 19, 34, 0.07);
+  transform: perspective(1000px) rotateX(4deg) translateY(0);
+  transform-style: preserve-3d;
+  transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1), box-shadow 0.28s ease, opacity 0.4s ease;
   position: relative;
   overflow: hidden;
 }
 
 .home-card:active {
-  transform: scale(0.96) translateY(2px);
-  box-shadow: var(--shadow-plate-active);
+  transform: perspective(1000px) rotateX(1.5deg) translateY(3px) translateZ(-4px) !important;
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 #ded6ce,
+    0 3px 8px rgba(22, 19, 34, 0.06) !important;
 }
 
 .card-icon {
@@ -214,7 +226,7 @@ input {
   height: 48px;
   border-radius: 12px;
   background: var(--cream);
-  box-shadow: inset 0 2px 4px rgba(22, 19, 34, 0.04);
+  box-shadow: inset 0 2px 4px rgba(22, 19, 34, 0.06), 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .card-title {
@@ -231,10 +243,30 @@ input {
   font-weight: 400;
 }
 
-.card-workouts { border-top: 4px solid var(--blush); }
-.card-log { border-top: 4px solid var(--sage); }
-.card-customize { border-top: 4px solid var(--stone); }
-.card-settings { border-top: 4px solid var(--twilight); }
+/* Physical Stacking Order & Directional Angular Tilt */
+.card-workouts {
+  z-index: 4;
+  border-top: 4px solid var(--blush);
+  transform: perspective(1000px) rotateX(4deg) rotateY(-1.2deg);
+}
+
+.card-log {
+  z-index: 3;
+  border-top: 4px solid var(--sage);
+  transform: perspective(1000px) rotateX(4deg) rotateY(1.2deg);
+}
+
+.card-customize {
+  z-index: 2;
+  border-top: 4px solid var(--stone);
+  transform: perspective(1000px) rotateX(3deg) rotateY(-1deg);
+}
+
+.card-settings {
+  z-index: 1;
+  border-top: 4px solid var(--twilight);
+  transform: perspective(1000px) rotateX(3deg) rotateY(1deg);
+}
 
 /* ═══════════════ WORKOUTS VIEW ═══════════════ */
 
