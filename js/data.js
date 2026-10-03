@@ -44,9 +44,31 @@ const MARE_DATA = {
           accent: 'accent-cardio',
           type: 'cardio',
           intro: 'Wednesday is dedicated to gentle, feel-good movement. Choose either option below depending on what you feel like doing today — 20 to 30 minutes at an easy, enjoyable pace. And if you need complete rest, take it!',
-          cardioOptions: [
-            { title: 'Treadmill', desc: 'Incline walking or gentle jogging. Great for burning energy with zero joint impact.', badge: '20-30 min, Incline 6-10%, 4.5-5.5 km/h', image: 'plan_b/cardio_1_treadmill.jpg' },
-            { title: 'Stairs / Stairmaster', desc: 'Steady step climbing. Amazing for glute activation and gentle cardiovascular conditioning.', badge: '15-25 min, Moderate, steady rhythm', image: 'plan_b/cardio_2_stairs.jpg' }
+          exercises: [
+            {
+              id: 'cardio_treadmill',
+              name: 'Treadmill Walk / Jog',
+              target: 'Cardio & Energy Burn',
+              sets: 1,
+              reps: '20-30 min',
+              repUnit: 'min',
+              inputType: 'cardio',
+              cardioType: 'treadmill',
+              image: 'plan_b/cardio_1_treadmill.jpg',
+              notes: 'Incline walking or gentle jogging. Great for burning energy with zero joint impact. Incline 6-10%, 4.5-5.5 km/h.'
+            },
+            {
+              id: 'cardio_stairs',
+              name: 'Stairs / Stairmaster',
+              target: 'Glutes & Conditioning',
+              sets: 1,
+              reps: '15-25 min',
+              repUnit: 'min',
+              inputType: 'cardio',
+              cardioType: 'stairs',
+              image: 'plan_b/cardio_2_stairs.jpg',
+              notes: 'Steady step climbing. Amazing for glute activation and gentle cardiovascular conditioning. Moderate, steady rhythm.'
+            }
           ]
         },
         thu: {
@@ -147,9 +169,31 @@ const MARE_DATA = {
           accent: 'accent-cardio',
           type: 'cardio',
           intro: 'Wednesday is dedicated to gentle, feel-good movement. Choose either option below depending on what you feel like doing today — 20 to 30 minutes at an easy, enjoyable pace. And if you need complete rest, take it!',
-          cardioOptions: [
-            { title: 'Treadmill', desc: 'Incline walking or gentle jogging. Great for burning energy with zero joint impact.', badge: '20-30 min, Incline 6-10%, 4.5-5.5 km/h', image: 'plan_b/cardio_1_treadmill.jpg' },
-            { title: 'Stairs / Stairmaster', desc: 'Steady step climbing. Amazing for glute activation and gentle cardiovascular conditioning.', badge: '15-25 min, Moderate, steady rhythm', image: 'plan_b/cardio_2_stairs.jpg' }
+          exercises: [
+            {
+              id: 'cardio_treadmill',
+              name: 'Treadmill Walk / Jog',
+              target: 'Cardio & Energy Burn',
+              sets: 1,
+              reps: '20-30 min',
+              repUnit: 'min',
+              inputType: 'cardio',
+              cardioType: 'treadmill',
+              image: 'plan_b/cardio_1_treadmill.jpg',
+              notes: 'Incline walking or gentle jogging. Great for burning energy with zero joint impact. Incline 6-10%, 4.5-5.5 km/h.'
+            },
+            {
+              id: 'cardio_stairs',
+              name: 'Stairs / Stairmaster',
+              target: 'Glutes & Conditioning',
+              sets: 1,
+              reps: '15-25 min',
+              repUnit: 'min',
+              inputType: 'cardio',
+              cardioType: 'stairs',
+              image: 'plan_b/cardio_2_stairs.jpg',
+              notes: 'Steady step climbing. Amazing for glute activation and gentle cardiovascular conditioning. Moderate, steady rhythm.'
+            }
           ]
         },
         thu: {

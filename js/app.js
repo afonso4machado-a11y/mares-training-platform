@@ -368,8 +368,8 @@ const MareApp = (function () {
           ${personalNoteHtml}
         </div>
         <div class="ex-meta-actions">
-          <span class="ex-prescription">${ex.sets || ''} &times; ${ex.reps || ''}</span>
-          <span class="ex-rep-unit">${ex.repUnit || 'reps'}</span>
+          <span class="ex-prescription">${ex.inputType === 'cardio' ? (ex.reps || '20-30 min') : (ex.sets || '') + ' &times; ' + (ex.reps || '')}</span>
+          <span class="ex-rep-unit">${ex.inputType === 'cardio' ? (ex.repUnit || 'min') : (ex.repUnit || 'reps')}</span>
           ${swapHtml}
         </div>
       </div>
@@ -396,7 +396,7 @@ const MareApp = (function () {
     // Render set tracking grid
     const setsContainer = card.querySelector('.ex-sets-container');
     if (setsContainer && !ex.isCircuit) {
-      MareTracker.renderSets(ex.id, setsContainer, setsCount, volume, day);
+      MareTracker.renderSets(ex.id, setsContainer, setsCount, volume, day, ex);
     }
 
     // Swap button handler
@@ -428,35 +428,19 @@ const MareApp = (function () {
     const volData = MARE_DATA.volumes[volKey];
     const dayData = volData ? volData.days['wed'] : null;
 
-    if (!dayData || !dayData.cardioOptions) return;
-
-    let html = '';
+    if (!dayData) return;
 
     if (dayData.intro) {
-      html += `<p class="cardio-intro">${dayData.intro}</p>`;
+      const introP = document.createElement('p');
+      introP.className = 'cardio-intro';
+      introP.textContent = dayData.intro;
+      container.appendChild(introP);
     }
 
-    html += '<div class="cardio-grid">';
-
-    dayData.cardioOptions.forEach((opt) => {
-      const imgHtml = opt.image
-        ? `<img class="cardio-img" src="images/${opt.image}" alt="${opt.title}" loading="lazy" />`
-        : '';
-
-      html += `
-        <div class="cardio-option-card">
-          ${imgHtml}
-          <div class="cardio-option-body">
-            <h3 class="cardio-option-title">${opt.title}</h3>
-            ${opt.desc ? `<p class="cardio-option-desc">${opt.desc}</p>` : ''}
-            ${opt.badge ? `<span class="cardio-badge">${opt.badge}</span>` : ''}
-          </div>
-        </div>
-      `;
+    const exercises = dayData.exercises || [];
+    exercises.forEach((ex, i) => {
+      container.appendChild(createExerciseCard(ex, i, volKey, 'wed'));
     });
-
-    html += '</div>';
-    container.innerHTML = html;
   }
 
   function renderFridayDay(container, exercises, dayMeta, volume, day) {
@@ -562,6 +546,7 @@ const MareApp = (function () {
           <div class="log-stats">
             <span class="log-stat">${summary.completedSets} sets recorded</span>
             ${summary.totalVolume > 0 ? `<span class="log-stat">${summary.totalVolume} kg volume</span>` : ''}
+            ${summary.totalCardioMin > 0 ? `<span class="log-stat">${summary.totalCardioMin} min cardio</span>` : ''}
           </div>
         </div>
       `;
@@ -692,40 +677,8 @@ const MareApp = (function () {
 
   // ── Event Binding ──
   function bindEvents() {
-    // Direct binding on all home cards for 100% iOS WebKit click guarantee
+    // Direct binding on all home cards
     $$('.home-card').forEach((card) => {
-      let touchMoved = false;
-      let startX = 0;
-      let startY = 0;
-
-      card.addEventListener('touchstart', (e) => {
-        touchMoved = false;
-        if (e.touches && e.touches[0]) {
-          startX = e.touches[0].clientX;
-          startY = e.touches[0].clientY;
-        }
-      }, { passive: true });
-
-      card.addEventListener('touchmove', (e) => {
-        if (e.touches && e.touches[0]) {
-          const dx = Math.abs(e.touches[0].clientX - startX);
-          const dy = Math.abs(e.touches[0].clientY - startY);
-          if (dx > 10 || dy > 10) {
-            touchMoved = true;
-          }
-        }
-      }, { passive: true });
-
-      card.addEventListener('touchend', (e) => {
-        if (!touchMoved) {
-          const target = card.dataset.view;
-          if (target) {
-            e.preventDefault();
-            navigateTo(target, card);
-          }
-        }
-      });
-
       card.addEventListener('click', (e) => {
         const target = card.dataset.view;
         if (target) navigateTo(target, card);

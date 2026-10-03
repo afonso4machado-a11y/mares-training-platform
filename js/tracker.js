@@ -41,19 +41,38 @@ const MareTracker = (function () {
     return data.sessions[dateString];
   }
 
-  function ensureExercise(session, exerciseId, setsCount) {
-    const count = Number(setsCount) || 4;
+  function ensureExercise(session, exerciseId, setsCount, exMeta) {
+    const isCardio = (exMeta && exMeta.inputType === 'cardio') || (exerciseId && exerciseId.startsWith('cardio_'));
+    const count = isCardio ? 1 : (Number(setsCount) || 4);
     if (!session.exercises[exerciseId]) {
       session.exercises[exerciseId] = { sets: [] };
       for (let i = 0; i < count; i++) {
-        session.exercises[exerciseId].sets.push({ kg: '', reps: '', completed: false });
+        if (isCardio) {
+          session.exercises[exerciseId].sets.push({ time: '', speed: '', incline: '', completed: false });
+        } else {
+          session.exercises[exerciseId].sets.push({ kg: '', reps: '', completed: false });
+        }
       }
       saveData();
-    } else if (session.exercises[exerciseId].sets.length < count) {
-      while (session.exercises[exerciseId].sets.length < count) {
-        session.exercises[exerciseId].sets.push({ kg: '', reps: '', completed: false });
+    } else {
+      if (isCardio) {
+        if (session.exercises[exerciseId].sets.length === 0) {
+          session.exercises[exerciseId].sets.push({ time: '', speed: '', incline: '', completed: false });
+          saveData();
+        } else if (session.exercises[exerciseId].sets.length > 1) {
+          session.exercises[exerciseId].sets = [session.exercises[exerciseId].sets[0]];
+          saveData();
+        }
+        const s0 = session.exercises[exerciseId].sets[0];
+        if (s0.time === undefined) s0.time = '';
+        if (s0.speed === undefined) s0.speed = '';
+        if (s0.incline === undefined) s0.incline = '';
+      } else if (session.exercises[exerciseId].sets.length < count) {
+        while (session.exercises[exerciseId].sets.length < count) {
+          session.exercises[exerciseId].sets.push({ kg: '', reps: '', completed: false });
+        }
+        saveData();
       }
-      saveData();
     }
     return session.exercises[exerciseId];
   }
@@ -72,7 +91,7 @@ const MareTracker = (function () {
   }
 
   // ── Render Set Tracking Grid ──
-  function renderSets(exerciseId, containerEl, setsCount, currentVol, currentDay) {
+  function renderSets(exerciseId, containerEl, setsCount, currentVol, currentDay, exMeta) {
     if (!containerEl) return;
     containerEl.innerHTML = '';
 
@@ -82,56 +101,146 @@ const MareTracker = (function () {
     if (currentVol) session.volume = currentVol;
     if (currentDay) session.day = currentDay;
 
-    const exData = ensureExercise(session, exerciseId, setsCount);
+    const isCardio = (exMeta && exMeta.inputType === 'cardio') || (exerciseId && exerciseId.startsWith('cardio_'));
+    const exData = ensureExercise(session, exerciseId, setsCount, exMeta);
     const prevData = findPreviousSession(session.volume, session.day, exerciseId);
 
     const grid = document.createElement('div');
     grid.className = 'ex-sets-grid';
 
-    const header = document.createElement('div');
-    header.className = 'sets-header';
-    header.innerHTML = `
-      <span class="set-label-header">Set</span>
-      <span class="set-label-header">kg</span>
-      <span class="set-label-header">reps</span>
-      <span class="set-label-header"></span>
-    `;
-    grid.appendChild(header);
+    if (isCardio) {
+      const cardioType = (exMeta && exMeta.cardioType) || (exerciseId.includes('stairs') ? 'stairs' : 'treadmill');
+      const isStairs = cardioType === 'stairs';
 
-    exData.sets.forEach((set, idx) => {
-      const prevSet = prevData && prevData.sets[idx] ? prevData.sets[idx] : null;
+      const header = document.createElement('div');
+      header.className = 'sets-header ' + (isStairs ? 'sets-header-cardio-2' : 'sets-header-cardio-3');
+      if (isStairs) {
+        header.innerHTML = `
+          <span class="set-label-header">#</span>
+          <span class="set-label-header">Tempo</span>
+          <span class="set-label-header">Nível</span>
+          <span class="set-label-header"></span>
+        `;
+      } else {
+        header.innerHTML = `
+          <span class="set-label-header">#</span>
+          <span class="set-label-header">Tempo</span>
+          <span class="set-label-header">Km/h</span>
+          <span class="set-label-header">Inc %</span>
+          <span class="set-label-header"></span>
+        `;
+      }
+      grid.appendChild(header);
+
+      const set = exData.sets[0] || { time: '', speed: '', incline: '', completed: false };
+      const prevSet = prevData && prevData.sets && prevData.sets[0] ? prevData.sets[0] : null;
 
       const row = document.createElement('div');
-      row.className = 'set-row' + (set.completed ? ' set-completed' : '');
-      row.dataset.setIndex = idx;
+      row.className = 'set-row ' + (isStairs ? 'set-row-cardio-2' : 'set-row-cardio-3') + (set.completed ? ' set-completed' : '');
+      row.dataset.setIndex = 0;
 
       const checkIcon = set.completed
         ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
         : '';
 
-      row.innerHTML = `
-        <span class="set-number">${idx + 1}</span>
-        <div class="set-input-wrap">
-          <input type="number" class="set-input set-input-kg" inputmode="decimal"
-                 value="${set.kg !== undefined ? set.kg : ''}" placeholder="${prevSet && prevSet.kg ? prevSet.kg : '--'}"
-                 data-exercise="${exerciseId}" data-index="${idx}" data-field="kg"
-                 ${set.completed ? 'disabled' : ''} />
-        </div>
-        <div class="set-input-wrap">
-          <input type="number" class="set-input set-input-reps" inputmode="numeric"
-                 value="${set.reps !== undefined ? set.reps : ''}" placeholder="${prevSet && prevSet.reps ? prevSet.reps : '--'}"
-                 data-exercise="${exerciseId}" data-index="${idx}" data-field="reps"
-                 ${set.completed ? 'disabled' : ''} />
-        </div>
-        <button class="set-check ${set.completed ? 'checked' : ''}"
-                data-exercise="${exerciseId}" data-index="${idx}"
-                aria-label="Toggle set ${idx + 1} completion">
-          ${checkIcon}
-        </button>
-      `;
-
+      if (isStairs) {
+        row.innerHTML = `
+          <span class="set-number">1</span>
+          <div class="set-input-wrap">
+            <input type="number" class="set-input set-input-time" inputmode="numeric"
+                   value="${set.time !== undefined ? set.time : ''}" placeholder="${prevSet && prevSet.time ? prevSet.time : 'min'}"
+                   data-exercise="${exerciseId}" data-index="0" data-field="time"
+                   ${set.completed ? 'disabled' : ''} />
+          </div>
+          <div class="set-input-wrap">
+            <input type="number" class="set-input set-input-speed" inputmode="numeric"
+                   value="${set.speed !== undefined ? set.speed : ''}" placeholder="${prevSet && prevSet.speed ? prevSet.speed : 'nível'}"
+                   data-exercise="${exerciseId}" data-index="0" data-field="speed"
+                   ${set.completed ? 'disabled' : ''} />
+          </div>
+          <button class="set-check ${set.completed ? 'checked' : ''}"
+                  data-exercise="${exerciseId}" data-index="0"
+                  aria-label="Concluir sessão de cardio">
+            ${checkIcon}
+          </button>
+        `;
+      } else {
+        row.innerHTML = `
+          <span class="set-number">1</span>
+          <div class="set-input-wrap">
+            <input type="number" class="set-input set-input-time" inputmode="numeric"
+                   value="${set.time !== undefined ? set.time : ''}" placeholder="${prevSet && prevSet.time ? prevSet.time : 'min'}"
+                   data-exercise="${exerciseId}" data-index="0" data-field="time"
+                   ${set.completed ? 'disabled' : ''} />
+          </div>
+          <div class="set-input-wrap">
+            <input type="number" step="0.1" class="set-input set-input-speed" inputmode="decimal"
+                   value="${set.speed !== undefined ? set.speed : ''}" placeholder="${prevSet && prevSet.speed ? prevSet.speed : 'km/h'}"
+                   data-exercise="${exerciseId}" data-index="0" data-field="speed"
+                   ${set.completed ? 'disabled' : ''} />
+          </div>
+          <div class="set-input-wrap">
+            <input type="number" class="set-input set-input-incline" inputmode="numeric"
+                   value="${set.incline !== undefined ? set.incline : ''}" placeholder="${prevSet && prevSet.incline ? prevSet.incline : '%'}"
+                   data-exercise="${exerciseId}" data-index="0" data-field="incline"
+                   ${set.completed ? 'disabled' : ''} />
+          </div>
+          <button class="set-check ${set.completed ? 'checked' : ''}"
+                  data-exercise="${exerciseId}" data-index="0"
+                  aria-label="Concluir sessão de cardio">
+            ${checkIcon}
+          </button>
+        `;
+      }
       grid.appendChild(row);
-    });
+
+    } else {
+      // Standard Strength Rows
+      const header = document.createElement('div');
+      header.className = 'sets-header';
+      header.innerHTML = `
+        <span class="set-label-header">Set</span>
+        <span class="set-label-header">kg</span>
+        <span class="set-label-header">reps</span>
+        <span class="set-label-header"></span>
+      `;
+      grid.appendChild(header);
+
+      exData.sets.forEach((set, idx) => {
+        const prevSet = prevData && prevData.sets[idx] ? prevData.sets[idx] : null;
+
+        const row = document.createElement('div');
+        row.className = 'set-row' + (set.completed ? ' set-completed' : '');
+        row.dataset.setIndex = idx;
+
+        const checkIcon = set.completed
+          ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
+          : '';
+
+        row.innerHTML = `
+          <span class="set-number">${idx + 1}</span>
+          <div class="set-input-wrap">
+            <input type="number" class="set-input set-input-kg" inputmode="decimal"
+                   value="${set.kg !== undefined ? set.kg : ''}" placeholder="${prevSet && prevSet.kg ? prevSet.kg : '--'}"
+                   data-exercise="${exerciseId}" data-index="${idx}" data-field="kg"
+                   ${set.completed ? 'disabled' : ''} />
+          </div>
+          <div class="set-input-wrap">
+            <input type="number" class="set-input set-input-reps" inputmode="numeric"
+                   value="${set.reps !== undefined ? set.reps : ''}" placeholder="${prevSet && prevSet.reps ? prevSet.reps : '--'}"
+                   data-exercise="${exerciseId}" data-index="${idx}" data-field="reps"
+                   ${set.completed ? 'disabled' : ''} />
+          </div>
+          <button class="set-check ${set.completed ? 'checked' : ''}"
+                  data-exercise="${exerciseId}" data-index="${idx}"
+                  aria-label="Toggle set ${idx + 1} completion">
+            ${checkIcon}
+          </button>
+        `;
+
+        grid.appendChild(row);
+      });
+    }
 
     containerEl.appendChild(grid);
 
@@ -149,7 +258,7 @@ const MareTracker = (function () {
         const exId = btn.dataset.exercise;
         const setIdx = parseInt(btn.dataset.index, 10);
         toggleSet(exId, setIdx);
-        renderSets(exId, containerEl, setsCount, currentVol, currentDay);
+        renderSets(exId, containerEl, setsCount, currentVol, currentDay, exMeta);
       });
     });
   }
@@ -166,7 +275,7 @@ const MareTracker = (function () {
     const session = getSession(getTodayKey());
     const exData = ensureExercise(session, exerciseId);
     if (!exData.sets[setIndex]) return;
-    exData.sets[setIndex][field] = value !== '' ? Number(value) : '';
+    exData.sets[setIndex][field] = value !== '' ? (isNaN(Number(value)) ? value : Number(value)) : '';
     debouncedSave();
   }
 
@@ -193,10 +302,11 @@ const MareTracker = (function () {
 
   function getSessionSummary(dateString) {
     const session = data.sessions[dateString];
-    if (!session) return { completedSets: 0, totalVolume: 0, title: '' };
+    if (!session) return { completedSets: 0, totalVolume: 0, totalCardioMin: 0, title: '' };
 
     let completedSets = 0;
     let totalVolume = 0;
+    let totalCardioMin = 0;
 
     let title = '';
     if (window.MARE_DATA && session.volume && session.day) {
@@ -216,12 +326,15 @@ const MareTracker = (function () {
             if (set.kg && set.reps) {
               totalVolume += Number(set.kg) * Number(set.reps);
             }
+            if (set.time) {
+              totalCardioMin += Number(set.time);
+            }
           }
         });
       }
     }
 
-    return { completedSets, totalVolume: Math.round(totalVolume), title };
+    return { completedSets, totalVolume: Math.round(totalVolume), totalCardioMin, title };
   }
 
   function getHistory(exerciseId, limit) {

@@ -175,7 +175,7 @@ input {
   gap: 16px;
   padding: 8px 4px 20px;
   perspective: 1200px;
-  transform-style: preserve-3d;
+  -webkit-perspective: 1200px;
 }
 
 @media (max-width: 340px) {
@@ -200,9 +200,8 @@ input {
     0 2px 4px rgba(22, 19, 34, 0.04),
     0 8px 16px -2px rgba(22, 19, 34, 0.09),
     0 18px 28px -6px rgba(22, 19, 34, 0.07);
-  transform: perspective(1000px) rotateX(4deg) translateY(0);
-  transform-style: preserve-3d;
-  transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1), box-shadow 0.28s ease;
+  transform: rotateX(4deg) translateY(0);
+  transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1), box-shadow 0.22s ease;
   position: relative;
   overflow: hidden;
   touch-action: manipulation;
@@ -210,10 +209,19 @@ input {
   -webkit-user-select: none;
   user-select: none;
   opacity: 1;
+  outline: none;
+  font-family: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+}
+
+.home-card * {
+  pointer-events: none;
 }
 
 .home-card:active {
-  transform: perspective(1000px) rotateX(1.5deg) translateY(3px) translateZ(-4px) !important;
+  transform: rotateX(1.5deg) translateY(3px) scale(0.97) !important;
   box-shadow: 
     inset 0 1px 0 rgba(255, 255, 255, 0.8),
     inset 0 -1px 0 #ded6ce,
@@ -252,25 +260,25 @@ input {
 .card-workouts {
   z-index: 4;
   border-top: 4px solid var(--blush);
-  transform: perspective(1000px) rotateX(4deg) rotateY(-1.2deg);
+  transform: rotateX(4deg) rotateY(-1.2deg);
 }
 
 .card-log {
   z-index: 3;
   border-top: 4px solid var(--sage);
-  transform: perspective(1000px) rotateX(4deg) rotateY(1.2deg);
+  transform: rotateX(4deg) rotateY(1.2deg);
 }
 
 .card-customize {
   z-index: 2;
   border-top: 4px solid var(--stone);
-  transform: perspective(1000px) rotateX(3deg) rotateY(-1deg);
+  transform: rotateX(3deg) rotateY(-1deg);
 }
 
 .card-settings {
   z-index: 1;
   border-top: 4px solid var(--twilight);
-  transform: perspective(1000px) rotateX(3deg) rotateY(1deg);
+  transform: rotateX(3deg) rotateY(1deg);
 }
 
 /* ═══════════════ WORKOUTS VIEW ═══════════════ */
@@ -591,6 +599,18 @@ input {
 
 .set-row:last-child {
   border-bottom: none;
+}
+
+.sets-header.sets-header-cardio-3,
+.set-row.set-row-cardio-3 {
+  grid-template-columns: 24px 1fr 1fr 1fr 42px;
+  gap: 6px;
+}
+
+.sets-header.sets-header-cardio-2,
+.set-row.set-row-cardio-2 {
+  grid-template-columns: 24px 1.2fr 1fr 42px;
+  gap: 6px;
 }
 
 .set-row.set-completed {
@@ -1238,10 +1258,12 @@ input {
   transition: transform 0.36s cubic-bezier(0.2, 0.9, 0.3, 1);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  pointer-events: none;
 }
 
 .detail-sheet.active {
   transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
 }
 
 .drag-handle {
