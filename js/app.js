@@ -11,6 +11,7 @@ const MareApp = (function () {
   let transitionLock = false;
   let transitionWatchdog = null;
   let initialized = false;
+  const preexistingQueue = (typeof window !== 'undefined' && window.MareApp && window.MareApp._queued) ? window.MareApp._queued : null;
 
   // ── DOM Cache ──
   const $ = (sel) => document.querySelector(sel);
@@ -22,7 +23,7 @@ const MareApp = (function () {
     if (transitionWatchdog) clearTimeout(transitionWatchdog);
     transitionWatchdog = setTimeout(() => {
       releaseTransitionLock();
-    }, 550);
+    }, 420);
   }
 
   function releaseTransitionLock() {
@@ -60,6 +61,9 @@ const MareApp = (function () {
 
   // ── View Router with Physical Shared-Element Zoom & Safe Watchdog ──
   function navigateTo(viewId, triggerEl) {
+    if (typeof window !== 'undefined' && window.MareApp && window.MareApp._queued) {
+      window.MareApp._queued = null;
+    }
     if (transitionLock || viewId === currentView) return;
     acquireTransitionLock();
 
@@ -113,9 +117,9 @@ const MareApp = (function () {
           setTimeout(() => {
             toView.classList.remove('view-entering');
             releaseTransitionLock();
-          }, 280);
+          }, 160);
         }
-      }, 300);
+      }, 160);
     } else {
       // Physical exit transition for back navigation
       fromView.classList.add('view-exiting');
@@ -138,9 +142,9 @@ const MareApp = (function () {
           setTimeout(() => {
             toView.classList.remove('view-entering');
             releaseTransitionLock();
-          }, 240);
+          }, 140);
         }
-      }, 180);
+      }, 140);
     }
   }
 
@@ -197,7 +201,11 @@ const MareApp = (function () {
       const isAct = chip.dataset.day === day;
       chip.classList.toggle('active', isAct);
       if (isAct) {
-        chip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        try {
+          if (chip && typeof chip.scrollIntoView === 'function') {
+            chip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          }
+        } catch (e) {}
       }
     });
 
@@ -258,7 +266,15 @@ const MareApp = (function () {
 
   // ── Weekend Rest Screen (3D Solid Breathing Sphere) ──
   function renderWeekendCard(container, dayMeta) {
-    const isSat = dayMeta.id.includes('sat');
+    if (!dayMeta) {
+      dayMeta = {
+        id: 'weekend_rest',
+        title: 'Rest & Recovery',
+        focus: 'Active recovery, hydration & mobility',
+        intro: 'Allow muscle fibers to repair, restore glycogen reserves, and replenish central nervous system energy for the upcoming training week.'
+      };
+    }
+    const isSat = dayMeta.id && dayMeta.id.includes('sat');
     const wrap = document.createElement('div');
     wrap.className = 'weekend-rest-container';
 
@@ -555,9 +571,14 @@ const MareApp = (function () {
   }
 
   function formatDate(dateStr) {
-    const d = new Date(dateStr + 'T00:00:00');
-    const options = { weekday: 'short', day: 'numeric', month: 'short' };
-    return d.toLocaleDateString('en-GB', options);
+    try {
+      const d = new Date(dateStr + 'T00:00:00');
+      if (isNaN(d.getTime())) return dateStr;
+      const options = { weekday: 'short', day: 'numeric', month: 'short' };
+      return d.toLocaleDateString('en-GB', options);
+    } catch (e) {
+      return dateStr;
+    }
   }
 
   // ── Settings View ──
@@ -671,7 +692,47 @@ const MareApp = (function () {
 
   // ── Event Binding ──
   function bindEvents() {
-    // Home card clicks
+    // Direct binding on all home cards for 100% iOS WebKit click guarantee
+    $$('.home-card').forEach((card) => {
+      let touchMoved = false;
+      let startX = 0;
+      let startY = 0;
+
+      card.addEventListener('touchstart', (e) => {
+        touchMoved = false;
+        if (e.touches && e.touches[0]) {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+        }
+      }, { passive: true });
+
+      card.addEventListener('touchmove', (e) => {
+        if (e.touches && e.touches[0]) {
+          const dx = Math.abs(e.touches[0].clientX - startX);
+          const dy = Math.abs(e.touches[0].clientY - startY);
+          if (dx > 10 || dy > 10) {
+            touchMoved = true;
+          }
+        }
+      }, { passive: true });
+
+      card.addEventListener('touchend', (e) => {
+        if (!touchMoved) {
+          const target = card.dataset.view;
+          if (target) {
+            e.preventDefault();
+            navigateTo(target, card);
+          }
+        }
+      });
+
+      card.addEventListener('click', (e) => {
+        const target = card.dataset.view;
+        if (target) navigateTo(target, card);
+      });
+    });
+
+    // Delegated listener on document for back buttons, volume toggles, day chips
     document.addEventListener('click', (e) => {
       const card = e.target.closest('.home-card');
       if (card) {
@@ -743,6 +804,13 @@ const MareApp = (function () {
     renderHome();
     bindEvents();
 
+    // Check if user tapped a card before scripts finished loading
+    if (preexistingQueue) {
+      setTimeout(() => {
+        navigateTo(preexistingQueue.view, preexistingQueue.el);
+      }, 40);
+    }
+
     const unlockAudioHandler = () => {
       if (window.MareTimer && window.MareTimer.unlockAudio) {
         window.MareTimer.unlockAudio();
@@ -771,20 +839,23 @@ if (typeof globalThis !== 'undefined') {
   globalThis.MareApp = MareApp;
 }
 
-// ── Resilient Boot: Handles cold load, cached load, and iOS BFCache restore ──
+// ── Immediate & Resilient Boot ──
 function bootMareApp() {
   if (typeof MareApp !== 'undefined' && MareApp.init) {
     MareApp.init();
   }
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', bootMareApp);
-} else {
-  // Document is already interactive or complete (e.g. Service Worker / iOS PWA cache)
-  bootMareApp();
-}
+// 1. Boot immediately: all DOM elements in index.html above this script are already parsed
+bootMareApp();
 
+// 2. Backup listener on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', bootMareApp);
+
+// 3. Backup listener on window load
+window.addEventListener('load', bootMareApp);
+
+// 4. BFCache / iOS Safari app resume
 window.addEventListener('pageshow', (event) => {
   if (typeof MareApp !== 'undefined') {
     MareApp.onPageResume(event.persisted);

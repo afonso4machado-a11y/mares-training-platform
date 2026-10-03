@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mare-v6';
+const CACHE_NAME = 'mare-v8';
 
 const BASE_ASSETS = [
   './',
@@ -58,7 +58,7 @@ const IMAGE_ASSETS = [
 
 const ALL_ASSETS = [...BASE_ASSETS, ...IMAGE_ASSETS];
 
-// Install: cache all assets
+// Install: cache all assets immediately
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -72,7 +72,7 @@ self.addEventListener('install', (e) => {
   self.skipWaiting();
 });
 
-// Activate: clean old caches
+// Activate: clean old caches immediately and claim clients
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) => {
@@ -84,12 +84,33 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
-// Fetch: cache-first with network fallback
+// Fetch strategy:
+// 1. Navigation / Document requests: Network-first (so latest HTML is always loaded when online, falling back to cache when offline)
+// 2. Static assets: Cache-first with network fallback and dynamic caching
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
 
+  // Navigation requests (HTML documents)
+  if (e.request.mode === 'navigate' || e.request.destination === 'document') {
+    e.respondWith(
+      fetch(e.request).then((response) => {
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+        }
+        return response;
+      }).catch(() => {
+        return caches.match(e.request, { ignoreSearch: true }).then((cached) => {
+          return cached || caches.match('./index.html') || caches.match('/index.html');
+        });
+      })
+    );
+    return;
+  }
+
+  // Static Assets: Cache-first
   e.respondWith(
-    caches.match(e.request).then((cached) => {
+    caches.match(e.request, { ignoreSearch: true }).then((cached) => {
       if (cached) return cached;
 
       return fetch(e.request).then((response) => {
@@ -101,9 +122,6 @@ self.addEventListener('fetch', (e) => {
         }
         return response;
       }).catch(() => {
-        if (e.request.mode === 'navigate') {
-          return caches.match('./index.html') || caches.match('/index.html');
-        }
         return new Response('', { status: 408 });
       });
     })
