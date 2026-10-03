@@ -1,28 +1,38 @@
 /**
- * MARE Planning — Tracker Module
- * Handles set logging, weight/rep input, and localStorage persistence.
+ * MARE Planning — Tracker Module (v13 Granular History & Physical Done Mechanic)
+ * Handles set logging, weight/rep input, ghost data placeholders, granular history archiving,
+ * and progressive overload tracking.
  */
 const MareTracker = (function () {
   'use strict';
 
   const STORAGE_KEY = 'mare_workout_log';
-  let data = { sessions: {} };
+  let data = { sessions: {}, completedSessions: [] };
   let saveTimeout = null;
+  let lastCompletedBackup = null;
 
   function loadData() {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = (typeof localStorage !== 'undefined') ? localStorage.getItem(STORAGE_KEY) : null;
     if (raw) {
       try {
-        data = JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        data = {
+          sessions: parsed.sessions || {},
+          completedSessions: Array.isArray(parsed.completedSessions) ? parsed.completedSessions : []
+        };
       } catch (e) {
         console.warn('MareTracker: corrupt data, resetting');
-        data = { sessions: {} };
+        data = { sessions: {}, completedSessions: [] };
       }
+    } else {
+      data = { sessions: {}, completedSessions: [] };
     }
   }
 
   function saveData() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
   }
 
   function debouncedSave() {
@@ -39,6 +49,52 @@ const MareTracker = (function () {
       data.sessions[dateString] = { plan: 'plan1', volume: 'plan1', day: 'mon', exercises: {} };
     }
     return data.sessions[dateString];
+  }
+
+  function getExerciseMeta(exerciseId, plan, day) {
+    if (typeof window !== 'undefined' && window.MARE_DATA) {
+      const plansSource = (MARE_DATA.plans || MARE_DATA.volumes);
+      if (plansSource) {
+        const planKey = (plan === 'custom' || plan === 'plan1' || plan === 'vol1') ? 'plan1' : 'plan2';
+        const p = plansSource[planKey];
+        if (p && p.days && p.days[day] && Array.isArray(p.days[day].exercises)) {
+          const found = p.days[day].exercises.find((e) => e.id === exerciseId);
+          if (found) return found;
+        }
+        for (const pk in plansSource) {
+          const pl = plansSource[pk];
+          if (pl && pl.days) {
+            for (const dk in pl.days) {
+              const d = pl.days[dk];
+              if (d && Array.isArray(d.exercises)) {
+                const found = d.exercises.find((e) => e.id === exerciseId);
+                if (found) return found;
+              }
+            }
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  function getExerciseName(exerciseId, plan, day) {
+    const meta = getExerciseMeta(exerciseId, plan, day);
+    if (meta && meta.name) return meta.name;
+    return exerciseId.replace(/^(vol\d+_|plan\d+_)/, '').replace(/_/g, ' ');
+  }
+
+  function getDayTitle(plan, day) {
+    if (typeof window !== 'undefined' && window.MARE_DATA) {
+      const planKey = (plan === 'custom' || plan === 'plan1' || plan === 'vol1') ? 'plan1' : 'plan2';
+      const plansSource = (MARE_DATA.plans || MARE_DATA.volumes);
+      const p = plansSource ? (plansSource[planKey] || plansSource['plan1']) : null;
+      if (p && p.days && p.days[day]) {
+        return p.days[day].title;
+      }
+    }
+    const dayNames = { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday' };
+    return dayNames[day] || 'Training';
   }
 
   function ensureExercise(session, exerciseId, setsCount, exMeta) {
@@ -78,16 +134,251 @@ const MareTracker = (function () {
   }
 
   function findPreviousSession(volume, day, exerciseId) {
-    const dates = Object.keys(data.sessions).sort().reverse();
-    const today = getTodayKey();
-    for (const d of dates) {
-      if (d === today) continue;
-      const s = data.sessions[d];
-      if (s.exercises && s.exercises[exerciseId] && s.exercises[exerciseId].sets) {
-        return s.exercises[exerciseId];
+    // 1. Search data.completedSessions (newest first)
+    if (Array.isArray(data.completedSessions)) {
+      for (const sess of data.completedSessions) {
+        if (sess && Array.isArray(sess.exercises)) {
+          const ex = sess.exercises.find((e) => e.id === exerciseId);
+          if (ex && Array.isArray(ex.sets)) {
+            const hasData = ex.sets.some((s) => (s.kg !== '' && s.kg !== undefined) || (s.time !== '' && s.time !== undefined));
+            if (hasData) {
+              return { sets: ex.sets };
+            }
+          }
+        }
+      }
+    }
+
+    // 2. Search legacy data.sessions
+    if (data.sessions) {
+      const dates = Object.keys(data.sessions).sort().reverse();
+      const today = getTodayKey();
+      for (const d of dates) {
+        if (d === today) continue;
+        const s = data.sessions[d];
+        if (s && s.exercises && s.exercises[exerciseId] && Array.isArray(s.exercises[exerciseId].sets)) {
+          const sets = s.exercises[exerciseId].sets;
+          const hasData = sets.some((st) => (st.kg !== '' && st.kg !== undefined) || (st.time !== '' && st.time !== undefined));
+          if (hasData) {
+            return s.exercises[exerciseId];
+          }
+        }
       }
     }
     return null;
+  }
+
+  function getPreviousExerciseData(volume, day, exerciseId) {
+    return findPreviousSession(volume, day, exerciseId);
+  }
+
+  // ── Complete Current Workout & State Clearing ──
+  function completeCurrentWorkout(plan, day) {
+    const todayKey = getTodayKey();
+    const activeSession = data.sessions[todayKey];
+
+    const now = new Date();
+    const timestamp = now.getTime();
+    const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    const id = 'session_' + timestamp;
+
+    // Snapshot before clearing for Undo protection
+    lastCompletedBackup = {
+      dateKey: todayKey,
+      sessionCopy: activeSession ? JSON.parse(JSON.stringify(activeSession)) : null,
+      completedId: id
+    };
+
+    const planKey = (plan === 'custom' || plan === 'plan1' || plan === 'vol1') ? 'plan1' : (plan || 'plan1');
+    const dayKey = day || (activeSession && activeSession.day) || 'mon';
+    const dayTitle = getDayTitle(planKey, dayKey);
+
+    const compiledExercises = [];
+    if (activeSession && activeSession.exercises) {
+      for (const exId of Object.keys(activeSession.exercises)) {
+        const exObj = activeSession.exercises[exId];
+        if (!exObj || !Array.isArray(exObj.sets)) continue;
+
+        const meta = getExerciseMeta(exId, planKey, dayKey);
+        const isCardio = (meta && meta.inputType === 'cardio') || exId.startsWith('cardio_');
+
+        const sets = exObj.sets.map((s, idx) => ({
+          setNumber: idx + 1,
+          kg: s.kg !== undefined ? s.kg : '',
+          reps: s.reps !== undefined ? s.reps : '',
+          time: s.time !== undefined ? s.time : '',
+          speed: s.speed !== undefined ? s.speed : '',
+          incline: s.incline !== undefined ? s.incline : '',
+          completed: Boolean(s.completed)
+        }));
+
+        const hasActivity = sets.some((s) => s.completed || (s.kg !== '' && s.kg !== undefined) || (s.time !== '' && s.time !== undefined));
+        if (hasActivity) {
+          compiledExercises.push({
+            id: exId,
+            name: meta && meta.name ? meta.name : getExerciseName(exId, planKey, dayKey),
+            target: meta && meta.target ? meta.target : '',
+            isCardio,
+            sets
+          });
+        }
+      }
+    }
+
+    const completedRecord = {
+      id,
+      timestamp,
+      date: todayKey,
+      time: timeStr,
+      plan: planKey,
+      day: dayKey,
+      title: dayTitle,
+      exercises: compiledExercises
+    };
+
+    if (!Array.isArray(data.completedSessions)) {
+      data.completedSessions = [];
+    }
+    data.completedSessions.unshift(completedRecord);
+
+    // Wipe values and check states from the day's active inputs
+    if (activeSession && activeSession.exercises) {
+      for (const exId of Object.keys(activeSession.exercises)) {
+        const exObj = activeSession.exercises[exId];
+        if (exObj && Array.isArray(exObj.sets)) {
+          exObj.sets.forEach((s) => {
+            s.kg = '';
+            s.reps = '';
+            s.time = '';
+            s.speed = '';
+            s.incline = '';
+            s.completed = false;
+          });
+        }
+      }
+    }
+
+    saveData();
+    return completedRecord;
+  }
+
+  function undoLastCompletion() {
+    if (!lastCompletedBackup) return false;
+
+    const { dateKey, sessionCopy, completedId } = lastCompletedBackup;
+
+    if (completedId && Array.isArray(data.completedSessions)) {
+      data.completedSessions = data.completedSessions.filter((s) => s.id !== completedId);
+    }
+
+    if (dateKey && sessionCopy) {
+      data.sessions[dateKey] = sessionCopy;
+    }
+
+    saveData();
+    lastCompletedBackup = null;
+    return true;
+  }
+
+  function getCompletedSessions() {
+    const list = Array.isArray(data.completedSessions) ? [...data.completedSessions] : [];
+
+    // Synthesize legacy sessions if not present in completedSessions
+    if (data.sessions) {
+      const existingDates = new Set(list.map((s) => s.date));
+      const dates = Object.keys(data.sessions).sort().reverse();
+      for (const d of dates) {
+        if (existingDates.has(d)) continue;
+        const s = data.sessions[d];
+        if (!s || !s.exercises) continue;
+
+        const compiledExercises = [];
+        for (const exId in s.exercises) {
+          const ex = s.exercises[exId];
+          if (ex && Array.isArray(ex.sets)) {
+            const hasActivity = ex.sets.some((st) => st.completed || (st.kg !== '' && st.kg !== undefined) || (st.time !== '' && st.time !== undefined));
+            if (hasActivity) {
+              compiledExercises.push({
+                id: exId,
+                name: getExerciseName(exId, s.plan || s.volume, s.day),
+                sets: ex.sets.map((st, idx) => ({
+                  setNumber: idx + 1,
+                  kg: st.kg !== undefined ? st.kg : '',
+                  reps: st.reps !== undefined ? st.reps : '',
+                  time: st.time !== undefined ? st.time : '',
+                  speed: st.speed !== undefined ? st.speed : '',
+                  incline: st.incline !== undefined ? st.incline : '',
+                  completed: Boolean(st.completed)
+                }))
+              });
+            }
+          }
+        }
+
+        if (compiledExercises.length > 0) {
+          list.push({
+            id: 'legacy_' + d,
+            timestamp: new Date(d + 'T12:00:00').getTime(),
+            date: d,
+            time: '12:00',
+            plan: s.plan || s.volume || 'plan1',
+            day: s.day || 'mon',
+            title: getDayTitle(s.plan || s.volume, s.day) || 'Training Session',
+            exercises: compiledExercises,
+            isLegacy: true
+          });
+        }
+      }
+    }
+
+    list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    return list;
+  }
+
+  // ── Progressive Overload Checker ──
+  function isProgressiveOverload(exerciseId, setIndex, currentKg, sessionTimestamp) {
+    const curr = parseFloat(currentKg);
+    if (isNaN(curr) || curr <= 0) return false;
+
+    // Check prior completed sessions strictly before sessionTimestamp
+    if (Array.isArray(data.completedSessions)) {
+      for (const sess of data.completedSessions) {
+        if (sessionTimestamp && sess.timestamp && sess.timestamp >= sessionTimestamp) continue;
+
+        if (sess && Array.isArray(sess.exercises)) {
+          const ex = sess.exercises.find((e) => e.id === exerciseId);
+          if (ex && Array.isArray(ex.sets)) {
+            const prevSet = ex.sets[setIndex];
+            if (prevSet && prevSet.kg !== '' && prevSet.kg !== undefined) {
+              const prev = parseFloat(prevSet.kg);
+              if (!isNaN(prev) && prev > 0) {
+                return curr > prev;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Fallback to legacy sessions
+    if (data.sessions) {
+      const dates = Object.keys(data.sessions).sort().reverse();
+      for (const d of dates) {
+        if (sessionTimestamp && new Date(d + 'T23:59:59').getTime() >= sessionTimestamp) continue;
+        const s = data.sessions[d];
+        if (s && s.exercises && s.exercises[exerciseId] && Array.isArray(s.exercises[exerciseId].sets)) {
+          const prevSet = s.exercises[exerciseId].sets[setIndex];
+          if (prevSet && prevSet.kg !== '' && prevSet.kg !== undefined) {
+            const prev = parseFloat(prevSet.kg);
+            if (!isNaN(prev) && prev > 0) {
+              return curr > prev;
+            }
+          }
+        }
+      }
+    }
+
+    return false;
   }
 
   // ── Render Set Tracking Grid ──
@@ -207,7 +498,7 @@ const MareTracker = (function () {
       grid.appendChild(header);
 
       exData.sets.forEach((set, idx) => {
-        const prevSet = prevData && prevData.sets[idx] ? prevData.sets[idx] : null;
+        const prevSet = prevData && prevData.sets && prevData.sets[idx] ? prevData.sets[idx] : null;
 
         const row = document.createElement('div');
         row.className = 'set-row' + (set.completed ? ' set-completed' : '');
@@ -221,13 +512,13 @@ const MareTracker = (function () {
           <span class="set-number">${idx + 1}</span>
           <div class="set-input-wrap">
             <input type="number" class="set-input set-input-kg" inputmode="decimal"
-                   value="${set.kg !== undefined ? set.kg : ''}" placeholder="${prevSet && prevSet.kg ? prevSet.kg : '--'}"
+                   value="${set.kg !== undefined ? set.kg : ''}" placeholder="${prevSet && (prevSet.kg !== '' && prevSet.kg !== undefined) ? prevSet.kg : '--'}"
                    data-exercise="${exerciseId}" data-index="${idx}" data-field="kg"
                    ${set.completed ? 'disabled' : ''} />
           </div>
           <div class="set-input-wrap">
             <input type="number" class="set-input set-input-reps" inputmode="numeric"
-                   value="${set.reps !== undefined ? set.reps : ''}" placeholder="${prevSet && prevSet.reps ? prevSet.reps : '--'}"
+                   value="${set.reps !== undefined ? set.reps : ''}" placeholder="${prevSet && (prevSet.reps !== '' && prevSet.reps !== undefined) ? prevSet.reps : '--'}"
                    data-exercise="${exerciseId}" data-index="${idx}" data-field="reps"
                    ${set.completed ? 'disabled' : ''} />
           </div>
@@ -289,15 +580,17 @@ const MareTracker = (function () {
     saveData();
 
     if (set.completed) {
-      if (navigator.vibrate) navigator.vibrate(40);
-      if (window.MareTimer) MareTimer.start();
+      if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(40);
+      if (typeof window !== 'undefined' && window.MareTimer) MareTimer.start();
     } else {
-      if (window.MareTimer && MareTimer.isRunning()) MareTimer.skip();
+      if (typeof window !== 'undefined' && window.MareTimer && MareTimer.isRunning()) MareTimer.skip();
     }
 
-    document.dispatchEvent(new CustomEvent('mare_set_toggled', {
-      detail: { exerciseId, setIndex, completed: set.completed }
-    }));
+    if (typeof document !== 'undefined') {
+      document.dispatchEvent(new CustomEvent('mare_set_toggled', {
+        detail: { exerciseId, setIndex, completed: set.completed }
+      }));
+    }
   }
 
   function getSessionSummary(dateString) {
@@ -309,7 +602,7 @@ const MareTracker = (function () {
     let totalCardioMin = 0;
 
     let title = '';
-    if (window.MARE_DATA && (session.plan || session.volume) && session.day) {
+    if (typeof window !== 'undefined' && window.MARE_DATA && (session.plan || session.volume) && session.day) {
       const p = session.plan || session.volume;
       const planKey = (p === 'custom' || p === 'plan1' || p === 'vol1') ? 'plan1' : 'plan2';
       const plansSource = (MARE_DATA.plans || MARE_DATA.volumes);
@@ -342,8 +635,22 @@ const MareTracker = (function () {
   function getHistory(exerciseId, limit) {
     limit = limit || 5;
     const history = [];
-    const dates = Object.keys(data.sessions).sort().reverse();
 
+    // Search completed sessions first
+    if (Array.isArray(data.completedSessions)) {
+      for (const sess of data.completedSessions) {
+        if (sess && Array.isArray(sess.exercises)) {
+          const ex = sess.exercises.find((e) => e.id === exerciseId);
+          if (ex) {
+            history.push({ date: sess.date, data: ex, timestamp: sess.timestamp });
+            if (history.length >= limit) return history;
+          }
+        }
+      }
+    }
+
+    // Legacy fallback
+    const dates = Object.keys(data.sessions).sort().reverse();
     for (const d of dates) {
       const s = data.sessions[d];
       if (s.exercises && s.exercises[exerciseId]) {
@@ -367,8 +674,11 @@ const MareTracker = (function () {
 
   function importData(jsonString) {
     const parsed = JSON.parse(jsonString);
-    if (parsed && parsed.sessions) {
-      data = parsed;
+    if (parsed && (parsed.sessions || parsed.completedSessions)) {
+      data = {
+        sessions: parsed.sessions || {},
+        completedSessions: Array.isArray(parsed.completedSessions) ? parsed.completedSessions : []
+      };
       saveData();
       return true;
     }
@@ -386,7 +696,13 @@ const MareTracker = (function () {
     getHistory,
     clearSession,
     exportData,
-    importData
+    importData,
+    findPreviousSession,
+    getPreviousExerciseData,
+    completeCurrentWorkout,
+    undoLastCompletion,
+    getCompletedSessions,
+    isProgressiveOverload
   };
 
   return api;

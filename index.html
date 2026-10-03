@@ -14,8 +14,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/app.css?v=12" />
-  <link rel="stylesheet" href="css/transitions.css?v=12" />
+  <link rel="stylesheet" href="css/app.css?v=13" />
+  <link rel="stylesheet" href="css/transitions.css?v=13" />
   <script>
     window.MareApp = window.MareApp || {
       _queued: null,
@@ -184,11 +184,29 @@
     <div class="detail-modal-body" id="detail-modal-content"></div>
   </div>
 
+  <!-- ═══════════════════ FLOATING UNDO TOAST BANNER ═══════════════════ -->
+  <div id="undo-toast" class="undo-toast hidden" role="status" aria-live="polite">
+    <div class="undo-content">
+      <div class="undo-text">
+        <span class="undo-title">Session Saved</span>
+        <span class="undo-sub">Workout compiled to History</span>
+      </div>
+      <button type="button" class="undo-btn" id="undo-toast-btn" aria-label="Undo session completion">Undo</button>
+    </div>
+    <div class="undo-progress-track">
+      <div class="undo-progress-bar"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ 3D CONFETTI CANVAS ═══════════════════ -->
+  <canvas id="confetti-canvas" class="confetti-canvas"></canvas>
+
   <!-- Scripts -->
-  <script src="js/data.js?v=12"></script>
-  <script src="js/editor.js?v=12"></script>
-  <script src="js/timer.js?v=12"></script>
-  <script src="js/tracker.js?v=12"></script>
-  <script src="js/app.js?v=12"></script>
+  <script src="js/data.js?v=13"></script>
+  <script src="js/editor.js?v=13"></script>
+  <script src="js/timer.js?v=13"></script>
+  <script src="js/tracker.js?v=13"></script>
+  <script src="js/confetti.js?v=13"></script>
+  <script src="js/app.js?v=13"></script>
 </body>
 </html>

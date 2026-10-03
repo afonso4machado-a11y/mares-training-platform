@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mare-v12';
+const CACHE_NAME = 'mare-v13';
 
 const BASE_ASSETS = [
   './',
@@ -9,6 +9,7 @@ const BASE_ASSETS = [
   './js/app.js',
   './js/data.js',
   './js/tracker.js',
+  './js/confetti.js',
   './js/timer.js',
   './js/editor.js',
   './images/icons/icon-192.png',

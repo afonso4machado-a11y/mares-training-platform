@@ -662,6 +662,15 @@ input {
 
 .set-input::placeholder {
   color: var(--stone-light);
+  opacity: 0.65;
+  font-style: italic;
+  font-weight: 400;
+  transition: opacity 0.15s ease;
+}
+
+.set-input:focus::placeholder {
+  color: transparent;
+  opacity: 0;
 }
 
 .set-input:disabled {
@@ -1141,52 +1150,328 @@ input {
   font-weight: 700;
 }
 
-/* ═══════════════ HISTORY VIEW ═══════════════ */
-.log-card {
-  background: var(--warm-white);
-  border-radius: 14px;
-  padding: 18px;
-  margin-bottom: 14px;
-  box-shadow: var(--shadow-plate);
+/* ═══════════════ 3D PHYSICAL "WORKOUT DONE!" BUTTON ═══════════════ */
+.workout-done-container {
+  padding: 24px 0 36px;
+  text-align: center;
 }
 
-.log-date-header {
+.workout-done-btn {
+  width: 100%;
+  height: 56px;
+  background: var(--warm-white);
+  border: 1px solid var(--border-dark);
+  border-radius: 16px;
+  box-shadow: 0 6px 0 #cfc3b8, 0 10px 20px rgba(22, 19, 34, 0.1);
+  font-family: var(--font-sans);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--twilight);
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.workout-done-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 #cfc3b8, 0 4px 8px rgba(22, 19, 34, 0.08);
+}
+
+/* ═══════════════ FLOATING UNDO TOAST BANNER ═══════════════ */
+.undo-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 16px;
+  right: 16px;
+  max-width: 448px;
+  margin: 0 auto;
+  background: var(--warm-white);
+  border: 1px solid var(--border-dark);
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(22, 19, 34, 0.16), 0 2px 6px rgba(22, 19, 34, 0.06);
+  z-index: 900;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+  transition: opacity 0.22s cubic-bezier(0.2, 0.9, 0.3, 1), transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.undo-toast.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.undo-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  gap: 12px;
+}
+
+.undo-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.undo-title {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--twilight);
+  line-height: 1.1;
+}
+
+.undo-sub {
+  font-size: 0.76rem;
+  color: var(--stone);
+  font-weight: 500;
+}
+
+.undo-btn {
+  background: var(--blush-soft);
+  border: 1px solid var(--blush);
+  border-radius: 10px;
+  color: var(--blush-deep);
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 8px 16px;
+  min-height: 36px;
+  cursor: pointer;
+  box-shadow: 0 2px 0 var(--blush-deep);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.undo-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 var(--blush-deep);
+}
+
+.undo-progress-track {
+  width: 100%;
+  height: 3px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.undo-progress-bar {
+  width: 100%;
+  height: 100%;
+  background: var(--blush);
+}
+
+/* ═══════════════ 3D CONFETTI CANVAS OVERLAY ═══════════════ */
+.confetti-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+  display: none;
+}
+
+/* ═══════════════ GRANULAR HISTORY VIEW (ACCORDION) ═══════════════ */
+.history-session-card {
+  background: var(--warm-white);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-plate);
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.session-header {
+  padding: 16px 18px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background 0.15s ease;
+}
+
+.session-header:active {
+  background: var(--cream);
+}
+
+.session-header-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 6px;
 }
 
-.log-date {
-  font-family: var(--font-serif);
-  font-size: 1.15rem;
-  font-weight: 500;
+.session-date {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--stone);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
 }
 
-.log-volume {
-  font-size: 0.7rem;
-  font-weight: 600;
+.session-plan-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
   color: var(--blush-deep);
   background: var(--blush-soft);
-  padding: 3px 12px;
+  padding: 3px 10px;
   border-radius: 99px;
 }
 
-.log-day-title {
-  font-size: 0.84rem;
+.session-header-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.session-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.session-day-title {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--twilight);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.session-sets-count {
+  font-size: 0.78rem;
   color: var(--stone);
+  font-weight: 500;
+}
+
+.session-chevron {
+  color: var(--stone-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.24s cubic-bezier(0.2, 0.9, 0.3, 1), color 0.15s ease;
+}
+
+.history-session-card.expanded .session-chevron {
+  transform: rotate(180deg);
+  color: var(--twilight);
+}
+
+.session-body {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.36s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.25s ease, padding 0.25s ease;
+  background: #fdfcfb;
+  border-top: 1px solid var(--border);
+}
+
+.history-session-card.expanded .session-body {
+  max-height: 3000px;
+  opacity: 1;
+  padding: 16px 18px 20px;
+}
+
+.session-exercises {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.session-ex-block {
+  background: var(--warm-white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 1px 4px rgba(22, 19, 34, 0.03);
+}
+
+.session-ex-name {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--twilight);
   margin: 0 0 10px;
 }
 
-.log-stats {
-  display: flex;
-  gap: 18px;
+.session-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
 }
 
-.log-stat {
-  font-size: 0.82rem;
+.session-table th {
+  text-align: left;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--stone);
+  padding: 4px 6px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.session-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid #f2ede8;
   color: var(--twilight);
+  font-weight: 500;
+}
+
+.session-table tr:last-child td {
+  border-bottom: none;
+}
+
+.td-set {
+  font-weight: 700;
+  color: var(--stone);
+  width: 44px;
+}
+
+.td-load {
   font-weight: 600;
+}
+
+.td-reps {
+  color: var(--stone);
+  font-weight: 500;
+}
+
+.set-row-completed .td-set {
+  color: var(--sage);
+}
+
+.overload-pill {
+  display: inline-block;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--sage-deep);
+  background: var(--sage-soft);
+  border: 1px solid var(--sage);
+  padding: 1px 7px;
+  border-radius: 99px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.session-no-ex {
+  font-size: 0.84rem;
+  color: var(--stone);
+  margin: 0;
+  font-style: italic;
 }
 
 /* ═══════════════ CUSTOMIZE VIEW ═══════════════ */

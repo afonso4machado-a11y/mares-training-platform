@@ -245,6 +245,7 @@ const MareApp = (function () {
     // Handle Wednesday Cardio
     if (dayMeta && dayMeta.type === 'cardio') {
       renderCardioDay(listEl, dayMeta, planKey);
+      appendWorkoutDoneButton(listEl, planKey, 'wed');
       return;
     }
 
@@ -264,6 +265,9 @@ const MareApp = (function () {
       });
     }
 
+    // Append 3D Workout Done button
+    appendWorkoutDoneButton(listEl, plan, day);
+
     // Stagger animation
     const cards = listEl.querySelectorAll('.exercise-card');
     cards.forEach((card, i) => {
@@ -275,6 +279,88 @@ const MareApp = (function () {
         card.style.transform = 'translateY(0)';
       }, 50 * i);
     });
+  }
+
+  // ── Workout Done Action & Undo Toast ──
+  let undoTimeout = null;
+
+  function onWorkoutDoneClick(plan, day) {
+    // 1. Dual-textured ascending haptic victory sequence
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate([100, 50, 100, 50, 400]);
+    }
+
+    // 2. Physical 3D Canvas Confetti celebration
+    if (typeof window !== 'undefined' && window.MareConfetti && typeof window.MareConfetti.launch === 'function') {
+      window.MareConfetti.launch();
+    }
+
+    // 3. Complete and archive session in Tracker
+    MareTracker.completeCurrentWorkout(plan, day);
+
+    // 4. Show 4-second floating Undo banner
+    showUndoToast(plan, day);
+
+    // 5. Re-render workouts: clean inputs with Ghost Data placeholders
+    renderWorkouts();
+  }
+
+  function appendWorkoutDoneButton(container, plan, day) {
+    const wrap = document.createElement('div');
+    wrap.className = 'workout-done-container';
+    wrap.innerHTML = `
+      <button type="button" class="workout-done-btn" id="btn-workout-done">
+        <span>Workout Done!</span>
+      </button>
+    `;
+    container.appendChild(wrap);
+
+    const btn = wrap.querySelector('#btn-workout-done');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        onWorkoutDoneClick(plan, day);
+      });
+    }
+  }
+
+  function showUndoToast(plan, day) {
+    const toast = $('#undo-toast');
+    if (!toast) return;
+
+    if (undoTimeout) {
+      clearTimeout(undoTimeout);
+      undoTimeout = null;
+    }
+
+    toast.classList.remove('hidden');
+    void toast.offsetWidth;
+    toast.classList.add('visible');
+
+    const progressBar = toast.querySelector('.undo-progress-bar');
+    if (progressBar) {
+      progressBar.style.transition = 'none';
+      progressBar.style.width = '100%';
+      void progressBar.offsetWidth;
+      progressBar.style.transition = 'width 4000ms linear';
+      progressBar.style.width = '0%';
+    }
+
+    undoTimeout = setTimeout(() => {
+      hideUndoToast();
+    }, 4000);
+  }
+
+  function hideUndoToast() {
+    const toast = $('#undo-toast');
+    if (!toast) return;
+    toast.classList.remove('visible');
+    setTimeout(() => {
+      toast.classList.add('hidden');
+    }, 220);
+    if (undoTimeout) {
+      clearTimeout(undoTimeout);
+      undoTimeout = null;
+    }
   }
 
   // ── Weekend Rest Screen (3D Moon & Concentric Gyroscope) ──
@@ -444,6 +530,9 @@ const MareApp = (function () {
       MareEditor.clearWeekendExercises(day);
       renderWorkouts();
     });
+
+    const activePlan = MareEditor.getActivePlan ? MareEditor.getActivePlan() : MareEditor.getActiveVolume();
+    appendWorkoutDoneButton(container, activePlan, day);
   }
 
   // ── Exercise Card with Hero Media & Skeleton Shimmer ──
@@ -652,49 +741,149 @@ const MareApp = (function () {
     if (sheet) sheet.classList.remove('active');
   }
 
-  // ── History View (Strictly Named 'History') ──
+  // ── History View (Strictly Granular Anatomical Archive) ──
   function renderLog() {
     const container = $('#log-content');
     if (!container) return;
 
-    const allData = JSON.parse(localStorage.getItem('mare_workout_log') || '{"sessions":{}}');
-    const sessions = allData.sessions || {};
-    const dates = Object.keys(sessions).sort().reverse();
+    const completedSessions = MareTracker.getCompletedSessions();
 
-    if (dates.length === 0) {
+    if (!completedSessions || completedSessions.length === 0) {
       container.innerHTML = '<p class="empty-state">No workout history recorded yet. Complete sets in Workouts to populate your archive.</p>';
       return;
     }
 
     let html = '';
-    dates.slice(0, 30).forEach((date) => {
-      const session = sessions[date];
-      const summary = MareTracker.getSessionSummary(date);
-
-      const planLabel = (session.plan === 'plan2' || session.volume === 'vol2' || session.volume === 'plan2')
+    completedSessions.slice(0, 40).forEach((sess) => {
+      const planLabel = (sess.plan === 'plan2' || sess.volume === 'vol2' || sess.volume === 'plan2')
         ? 'Plan 2'
-        : (session.plan === 'custom' || session.volume === 'custom')
+        : (sess.plan === 'custom' || sess.volume === 'custom')
         ? 'Custom'
         : 'Plan 1';
-      const dayLabel = DAY_NAMES[session.day] || 'Training Session';
+      const dayLabel = DAY_NAMES[sess.day] || 'Training Session';
+
+      let totalSets = 0;
+      if (Array.isArray(sess.exercises)) {
+        sess.exercises.forEach((ex) => {
+          if (Array.isArray(ex.sets)) {
+            totalSets += ex.sets.filter((st) => st.completed || st.kg || st.time).length;
+          }
+        });
+      }
+
+      const dateDisplay = formatDate(sess.date) + (sess.time ? ' • ' + sess.time : '');
 
       html += `
-        <div class="log-card">
-          <div class="log-date-header">
-            <span class="log-date">${formatDate(date)}</span>
-            <span class="log-plan log-volume">${planLabel}</span>
+        <div class="history-session-card" data-session-id="${sess.id}">
+          <div class="session-header" role="button" tabindex="0" aria-expanded="false">
+            <div class="session-header-meta">
+              <span class="session-date">${dateDisplay}</span>
+              <span class="session-plan-badge">${planLabel}</span>
+            </div>
+            <div class="session-header-main">
+              <div class="session-title-wrap">
+                <h3 class="session-day-title">${dayLabel} — ${sess.title || 'Completed Session'}</h3>
+                <span class="session-sets-count">${totalSets} sets recorded</span>
+              </div>
+              <div class="session-chevron">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </div>
+            </div>
           </div>
-          <p class="log-day-title">${dayLabel} — ${summary.title || 'Completed Session'}</p>
-          <div class="log-stats">
-            <span class="log-stat">${summary.completedSets} sets recorded</span>
-            ${summary.totalVolume > 0 ? `<span class="log-stat">${summary.totalVolume} kg volume</span>` : ''}
-            ${summary.totalCardioMin > 0 ? `<span class="log-stat">${summary.totalCardioMin} min cardio</span>` : ''}
+
+          <div class="session-body">
+            <div class="session-exercises">
+      `;
+
+      if (Array.isArray(sess.exercises) && sess.exercises.length > 0) {
+        sess.exercises.forEach((ex) => {
+          const sets = Array.isArray(ex.sets) ? ex.sets : [];
+          const isCardio = ex.isCardio || (ex.id && ex.id.startsWith('cardio_'));
+
+          html += `
+            <div class="session-ex-block">
+              <h4 class="session-ex-name">${ex.name}</h4>
+              <table class="session-table">
+                <thead>
+                  <tr>
+                    <th class="th-set">Set</th>
+                    <th class="th-load">${isCardio ? 'Velocidade / Nível' : 'Load (kg)'}</th>
+                    <th class="th-reps">${isCardio ? 'Tempo' : 'Reps'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+          `;
+
+          sets.forEach((set, setIdx) => {
+            const isOverload = !isCardio && MareTracker.isProgressiveOverload(ex.id, setIdx, set.kg, sess.timestamp);
+            const overloadBadge = isOverload ? `<span class="overload-pill">+ Overload</span>` : '';
+
+            let loadText = '--';
+            if (isCardio) {
+              if (set.speed !== '' && set.speed !== undefined) {
+                loadText = set.incline ? `${set.speed} km/h (${set.incline}%)` : `${set.speed}`;
+              }
+            } else {
+              if (set.kg !== '' && set.kg !== undefined) {
+                loadText = `${set.kg} kg`;
+              }
+            }
+
+            let repText = '--';
+            if (isCardio) {
+              if (set.time !== '' && set.time !== undefined) {
+                repText = `${set.time} min`;
+              }
+            } else {
+              if (set.reps !== '' && set.reps !== undefined) {
+                repText = `${set.reps}`;
+              }
+            }
+
+            html += `
+              <tr class="${set.completed ? 'set-row-completed' : ''}">
+                <td class="td-set">${set.setNumber || (setIdx + 1)}</td>
+                <td class="td-load">
+                  <span class="load-value">${loadText}</span>
+                  ${overloadBadge}
+                </td>
+                <td class="td-reps">${repText}</td>
+              </tr>
+            `;
+          });
+
+          html += `
+                </tbody>
+              </table>
+            </div>
+          `;
+        });
+      } else {
+        html += `<p class="session-no-ex">No exercise breakdown recorded for this session.</p>`;
+      }
+
+      html += `
+            </div>
           </div>
         </div>
       `;
     });
 
     container.innerHTML = html;
+
+    // Bind accordion toggles
+    container.querySelectorAll('.history-session-card').forEach((card) => {
+      const header = card.querySelector('.session-header');
+      if (header) {
+        header.addEventListener('click', () => {
+          const wasExpanded = card.classList.contains('expanded');
+          card.classList.toggle('expanded', !wasExpanded);
+          header.setAttribute('aria-expanded', String(!wasExpanded));
+        });
+      }
+    });
   }
 
   function formatDate(dateStr) {
@@ -861,6 +1050,20 @@ const MareApp = (function () {
       if (dayChip) {
         activeDay = dayChip.dataset.day;
         renderWorkouts();
+        return;
+      }
+
+      // Undo Toast button
+      const undoBtn = e.target.closest('#undo-toast-btn');
+      if (undoBtn) {
+        hideUndoToast();
+        const success = MareTracker.undoLastCompletion();
+        if (success) {
+          if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            navigator.vibrate(30);
+          }
+          renderWorkouts();
+        }
         return;
       }
     });
