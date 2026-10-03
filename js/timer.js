@@ -1,6 +1,6 @@
 /**
- * MARE Atelier — Timer Module
- * Volumetric analog rest timer with circular SVG ring, web audio chime, and haptic feedback.
+ * MARE Planning — Timer Module
+ * Analog rest timer with circular SVG ring, web audio chime, and haptic feedback.
  */
 const MareTimer = (function () {
   'use strict';
@@ -85,12 +85,18 @@ const MareTimer = (function () {
     } catch (e) {}
   }
 
-  function onComplete() {
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+  function triggerHapticAlert() {
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
       try {
         navigator.vibrate([200, 100, 200]);
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Vibration failed:', e);
+      }
     }
+  }
+
+  function onComplete() {
+    triggerHapticAlert();
     playBeep();
     setTimeout(hide, 2000);
   }
@@ -175,7 +181,8 @@ const MareTimer = (function () {
     skip,
     isRunning,
     setPreset,
-    unlockAudio
+    unlockAudio,
+    triggerHapticAlert
   };
 
   return api;

@@ -1,7 +1,7 @@
 const MARE_DATA = {
-  volumes: {
-    vol1: {
-      name: 'Volume I',
+  plans: {
+    plan1: {
+      name: 'Plan 1',
       days: {
         mon: {
           id: 'vol1_mon',
@@ -125,8 +125,8 @@ const MARE_DATA = {
         }
       }
     },
-    vol2: {
-      name: 'Volume II',
+    plan2: {
+      name: 'Plan 2',
       days: {
         mon: {
           id: 'vol2_mon',
@@ -313,6 +313,13 @@ const MARE_DATA = {
     'vol2_fri_7': 'vol1_fri_7'
   }
 };
+
+// Structural compatibility aliases
+MARE_DATA.volumes = MARE_DATA.plans;
+MARE_DATA.plans.vol1 = MARE_DATA.plans.plan1;
+MARE_DATA.plans.vol2 = MARE_DATA.plans.plan2;
+MARE_DATA.volumes.vol1 = MARE_DATA.plans.plan1;
+MARE_DATA.volumes.vol2 = MARE_DATA.plans.plan2;
 
 if (typeof window !== 'undefined') {
   window.MARE_DATA = MARE_DATA;

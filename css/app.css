@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   MARE Atelier — Physical Matte Neomorphism Design System
+   MARE Planning — Physical Matte Neomorphism Design System
    ═══════════════════════════════════════════════════════════ */
 
 :root {
@@ -283,7 +283,8 @@ input {
 
 /* ═══════════════ WORKOUTS VIEW ═══════════════ */
 
-/* Volume Toggle */
+/* Plan Toggle */
+.plan-toggle,
 .volume-toggle {
   display: flex;
   background: var(--cream);
@@ -294,6 +295,7 @@ input {
   margin-bottom: 16px;
 }
 
+.plan-btn,
 .vol-btn {
   flex: 1;
   text-align: center;
@@ -307,6 +309,7 @@ input {
   transition: all 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 
+.plan-btn.active,
 .vol-btn.active {
   background: var(--warm-white);
   color: var(--twilight);

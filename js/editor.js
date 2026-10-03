@@ -1,5 +1,5 @@
 /**
- * MARE Atelier — Editor Module (v2 Custom Routine Engine)
+ * MARE Planning — Editor Module (v2 Custom Routine Engine)
  * Handles routine customization: exercise reordering, sister-exercise swapping,
  * adding custom exercises, and personal notes with zero dead clicks.
  */
@@ -9,7 +9,8 @@ const MareEditor = (function () {
   const STORAGE_KEY = 'mare_custom_routines';
 
   let state = {
-    activeVolume: 'vol1',
+    activePlan: 'plan1',
+    activeVolume: 'plan1',
     customDays: {},
     notes: {},
     swappedExercises: {}
@@ -22,6 +23,9 @@ const MareEditor = (function () {
       try {
         const parsed = JSON.parse(raw);
         state = { ...state, ...parsed };
+        if (state.activeVolume && !state.activePlan) {
+          state.activePlan = state.activeVolume === 'vol2' ? 'plan2' : (state.activeVolume === 'custom' ? 'custom' : 'plan1');
+        }
       } catch (e) {
         console.warn('MareEditor: corrupt state, resetting');
       }
@@ -34,10 +38,13 @@ const MareEditor = (function () {
 
   // ── Base Data Access ──
   function getBaseDayExercises(dayId) {
-    let vol = state.activeVolume;
-    if (vol === 'custom') vol = 'vol1';
-    if (!window.MARE_DATA || !MARE_DATA.volumes || !MARE_DATA.volumes[vol]) return [];
-    const dayData = MARE_DATA.volumes[vol].days[dayId];
+    let plan = state.activePlan || state.activeVolume || 'plan1';
+    if (plan === 'custom' || plan === 'vol1') plan = 'plan1';
+    if (plan === 'vol2') plan = 'plan2';
+    const plans = (window.MARE_DATA && (MARE_DATA.plans || MARE_DATA.volumes)) || {};
+    const planData = plans[plan] || plans['plan1'] || plans['vol1'];
+    if (!planData || !planData.days) return [];
+    const dayData = planData.days[dayId];
     if (!dayData || !dayData.exercises) return [];
     return JSON.parse(JSON.stringify(dayData.exercises));
   }
@@ -147,16 +154,24 @@ const MareEditor = (function () {
     return state.notes[exerciseId] || '';
   }
 
-  // ── Active Volume ──
+  // ── Active Plan ──
+  function setActivePlan(plan) {
+    const normalized = (plan === 'plan2' || plan === 'vol2') ? 'plan2' : (plan === 'custom' ? 'custom' : 'plan1');
+    state.activePlan = normalized;
+    state.activeVolume = normalized;
+    save();
+  }
+
+  function getActivePlan() {
+    return state.activePlan || state.activeVolume || 'plan1';
+  }
+
   function setActiveVolume(volume) {
-    if (['vol1', 'vol2', 'custom'].includes(volume)) {
-      state.activeVolume = volume;
-      save();
-    }
+    setActivePlan(volume);
   }
 
   function getActiveVolume() {
-    return state.activeVolume;
+    return getActivePlan();
   }
 
   // ── Get Effective Day (Primary routine provider for Workouts) ──
@@ -189,7 +204,8 @@ const MareEditor = (function () {
   // ── Reset ──
   function resetToDefaults() {
     state = {
-      activeVolume: 'vol1',
+      activePlan: 'plan1',
+      activeVolume: 'plan1',
       customDays: {},
       notes: {},
       swappedExercises: {}
@@ -456,6 +472,8 @@ const MareEditor = (function () {
     clearWeekendExercises,
     setNote,
     getNote,
+    setActivePlan,
+    getActivePlan,
     setActiveVolume,
     getActiveVolume,
     getEffectiveDay,

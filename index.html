@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
-  <title>MARE Atelier</title>
+  <title>MARE Planning</title>
   <meta name="description" content="Personal training companion" />
   <meta name="theme-color" content="#faf7f4" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="MARE" />
+  <meta name="apple-mobile-web-app-title" content="MARE Planning" />
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="images/icons/icon-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/app.css?v=11" />
-  <link rel="stylesheet" href="css/transitions.css?v=11" />
+  <link rel="stylesheet" href="css/app.css?v=12" />
+  <link rel="stylesheet" href="css/transitions.css?v=12" />
   <script>
     window.MareApp = window.MareApp || {
       _queued: null,
@@ -35,7 +35,7 @@
   <section class="view-container view-active" id="view-home">
     <header class="home-header">
       <h1 class="masthead">MARE</h1>
-      <p class="masthead-sub">Atelier</p>
+      <p class="masthead-sub">Planning</p>
       <p class="today-label" id="home-today-label">Today's Training</p>
     </header>
 
@@ -107,10 +107,10 @@
       <h1 class="view-title">Workouts</h1>
     </header>
 
-    <div class="volume-toggle">
-      <button class="vol-btn active" data-volume="vol1">Volume I</button>
-      <button class="vol-btn" data-volume="vol2">Volume II</button>
-      <button class="vol-btn" data-volume="custom">Custom</button>
+    <div class="plan-toggle volume-toggle">
+      <button class="plan-btn vol-btn active" data-plan="plan1" data-volume="plan1">Plan 1</button>
+      <button class="plan-btn vol-btn" data-plan="plan2" data-volume="plan2">Plan 2</button>
+      <button class="plan-btn vol-btn" data-plan="custom" data-volume="custom">Custom</button>
     </div>
 
     <!-- 7-day selector -->
@@ -185,10 +185,10 @@
   </div>
 
   <!-- Scripts -->
-  <script src="js/data.js?v=11"></script>
-  <script src="js/editor.js?v=11"></script>
-  <script src="js/timer.js?v=11"></script>
-  <script src="js/tracker.js?v=11"></script>
-  <script src="js/app.js?v=11"></script>
+  <script src="js/data.js?v=12"></script>
+  <script src="js/editor.js?v=12"></script>
+  <script src="js/timer.js?v=12"></script>
+  <script src="js/tracker.js?v=12"></script>
+  <script src="js/app.js?v=12"></script>
 </body>
 </html>

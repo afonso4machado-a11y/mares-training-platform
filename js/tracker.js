@@ -1,5 +1,5 @@
 /**
- * MARE Atelier — Tracker Module
+ * MARE Planning — Tracker Module
  * Handles set logging, weight/rep input, and localStorage persistence.
  */
 const MareTracker = (function () {
@@ -36,7 +36,7 @@ const MareTracker = (function () {
 
   function getSession(dateString) {
     if (!data.sessions[dateString]) {
-      data.sessions[dateString] = { volume: 'vol1', day: 'mon', exercises: {} };
+      data.sessions[dateString] = { plan: 'plan1', volume: 'plan1', day: 'mon', exercises: {} };
     }
     return data.sessions[dateString];
   }
@@ -309,11 +309,13 @@ const MareTracker = (function () {
     let totalCardioMin = 0;
 
     let title = '';
-    if (window.MARE_DATA && session.volume && session.day) {
-      const volKey = session.volume === 'custom' ? 'vol1' : session.volume;
-      const vol = MARE_DATA.volumes[volKey];
-      if (vol && vol.days[session.day]) {
-        title = vol.days[session.day].title;
+    if (window.MARE_DATA && (session.plan || session.volume) && session.day) {
+      const p = session.plan || session.volume;
+      const planKey = (p === 'custom' || p === 'plan1' || p === 'vol1') ? 'plan1' : 'plan2';
+      const plansSource = (MARE_DATA.plans || MARE_DATA.volumes);
+      const plan = plansSource ? (plansSource[planKey] || plansSource['plan1']) : null;
+      if (plan && plan.days && plan.days[session.day]) {
+        title = plan.days[session.day].title;
       }
     }
 

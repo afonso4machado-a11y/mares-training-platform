@@ -1,5 +1,5 @@
 /**
- * MARE Atelier — App Controller (v2 Matte 3D & Day-Aware)
+ * MARE Planning — App Controller (v2 Matte 3D & Day-Aware)
  * Handles view routing, day-aware auto-selection, physical transitions, and modal sheets.
  */
 const MareApp = (function () {
@@ -155,10 +155,11 @@ const MareApp = (function () {
   // ── Home Screen ──
   function renderHome() {
     const todayKey = getTodayKey();
-    const volume = MareEditor.getActiveVolume();
-    const volKey = volume === 'custom' ? 'vol1' : volume;
-    const volData = MARE_DATA.volumes[volKey];
-    const dayData = volData ? volData.days[todayKey] : null;
+    const plan = MareEditor.getActivePlan ? MareEditor.getActivePlan() : MareEditor.getActiveVolume();
+    const planKey = (plan === 'custom' || plan === 'plan1' || plan === 'vol1') ? 'plan1' : 'plan2';
+    const plansSource = (MARE_DATA.plans || MARE_DATA.volumes);
+    const planData = plansSource ? (plansSource[planKey] || plansSource['plan1']) : null;
+    const dayData = planData ? planData.days[todayKey] : null;
 
     const todayLabel = $('#home-today-label');
     if (todayLabel && dayData) {
@@ -187,13 +188,19 @@ const MareApp = (function () {
   }
 
   function renderWorkouts() {
-    const volume = MareEditor.getActiveVolume();
+    const plan = MareEditor.getActivePlan ? MareEditor.getActivePlan() : MareEditor.getActiveVolume();
     const day = activeDay || getTodayKey();
     activeDay = day;
 
-    // Update volume toggle buttons
-    $$('.vol-btn').forEach((btn) => {
-      btn.classList.toggle('active', btn.dataset.volume === volume);
+    // Update plan toggle buttons
+    $$('.plan-btn, .vol-btn').forEach((btn) => {
+      const b = btn.dataset.plan || btn.dataset.volume;
+      const isMatch = (b === plan) ||
+                      (b === 'plan1' && plan === 'vol1') ||
+                      (b === 'plan2' && plan === 'vol2') ||
+                      (b === 'vol1' && plan === 'plan1') ||
+                      (b === 'vol2' && plan === 'plan2');
+      btn.classList.toggle('active', isMatch);
     });
 
     // Update day chips & scroll active day chip into center view
@@ -209,9 +216,10 @@ const MareApp = (function () {
       }
     });
 
-    const volKey = volume === 'custom' ? 'vol1' : volume;
-    const volData = MARE_DATA.volumes[volKey];
-    const dayMeta = volData ? volData.days[day] : null;
+    const planKey = (plan === 'custom' || plan === 'plan1' || plan === 'vol1') ? 'plan1' : 'plan2';
+    const plansSource = (MARE_DATA.plans || MARE_DATA.volumes);
+    const planData = plansSource ? (plansSource[planKey] || plansSource['plan1']) : null;
+    const dayMeta = planData ? planData.days[day] : null;
 
     const titleEl = $('#workout-day-title');
     const focusEl = $('#workout-day-focus');
@@ -236,7 +244,7 @@ const MareApp = (function () {
 
     // Handle Wednesday Cardio
     if (dayMeta && dayMeta.type === 'cardio') {
-      renderCardioDay(listEl, dayMeta, volKey);
+      renderCardioDay(listEl, dayMeta, planKey);
       return;
     }
 
@@ -249,10 +257,10 @@ const MareApp = (function () {
     }
 
     if (day === 'fri') {
-      renderFridayDay(listEl, exercises, dayMeta, volume, day);
+      renderFridayDay(listEl, exercises, dayMeta, plan, day);
     } else {
       exercises.forEach((ex, i) => {
-        listEl.appendChild(createExerciseCard(ex, i, volume, day));
+        listEl.appendChild(createExerciseCard(ex, i, plan, day));
       });
     }
 
@@ -420,7 +428,8 @@ const MareApp = (function () {
     container.appendChild(headerBar);
 
     exercises.forEach((ex, i) => {
-      const card = createExerciseCard(ex, i, MareEditor.getActiveVolume(), day);
+      const activePlan = MareEditor.getActivePlan ? MareEditor.getActivePlan() : MareEditor.getActiveVolume();
+      const card = createExerciseCard(ex, i, activePlan, day);
       card.style.opacity = '0';
       card.style.transform = 'scale(0.92) translateY(10px)';
       container.appendChild(card);
@@ -551,9 +560,10 @@ const MareApp = (function () {
     return card;
   }
 
-  function renderCardioDay(container, dayMeta, volKey) {
-    const volData = MARE_DATA.volumes[volKey];
-    const dayData = volData ? volData.days['wed'] : null;
+  function renderCardioDay(container, dayMeta, planKey) {
+    const plansSource = (MARE_DATA.plans || MARE_DATA.volumes);
+    const planData = plansSource ? (plansSource[planKey] || plansSource['plan1']) : null;
+    const dayData = planData ? planData.days['wed'] : null;
 
     if (!dayData) return;
 
@@ -566,7 +576,7 @@ const MareApp = (function () {
 
     const exercises = dayData.exercises || [];
     exercises.forEach((ex, i) => {
-      container.appendChild(createExerciseCard(ex, i, volKey, 'wed'));
+      container.appendChild(createExerciseCard(ex, i, planKey, 'wed'));
     });
   }
 
@@ -597,12 +607,13 @@ const MareApp = (function () {
         absSection.appendChild(createExerciseCard(ex, lowerExercises.length + i, volume, day));
       });
 
-      const volKey = volume === 'custom' ? 'vol1' : volume;
-      const volData = MARE_DATA.volumes[volKey];
-      if (volData && volData.days.fri && volData.days.fri.circuitTip) {
+      const planKey = (volume === 'custom' || volume === 'plan1' || volume === 'vol1') ? 'plan1' : 'plan2';
+      const plansSource = (MARE_DATA.plans || MARE_DATA.volumes);
+      const planData = plansSource ? (plansSource[planKey] || plansSource['plan1']) : null;
+      if (planData && planData.days.fri && planData.days.fri.circuitTip) {
         const tip = document.createElement('div');
         tip.className = 'coaching-tip';
-        tip.innerHTML = `<strong>Circuit Protocol:</strong> ${volData.days.fri.circuitTip}`;
+        tip.innerHTML = `<strong>Circuit Protocol:</strong> ${planData.days.fri.circuitTip}`;
         absSection.appendChild(tip);
       }
 
@@ -660,14 +671,18 @@ const MareApp = (function () {
       const session = sessions[date];
       const summary = MareTracker.getSessionSummary(date);
 
-      const volLabel = session.volume === 'vol1' ? 'Volume I' : session.volume === 'vol2' ? 'Volume II' : 'Custom';
+      const planLabel = (session.plan === 'plan2' || session.volume === 'vol2' || session.volume === 'plan2')
+        ? 'Plan 2'
+        : (session.plan === 'custom' || session.volume === 'custom')
+        ? 'Custom'
+        : 'Plan 1';
       const dayLabel = DAY_NAMES[session.day] || 'Training Session';
 
       html += `
         <div class="log-card">
           <div class="log-date-header">
             <span class="log-date">${formatDate(date)}</span>
-            <span class="log-volume">${volLabel}</span>
+            <span class="log-plan log-volume">${planLabel}</span>
           </div>
           <p class="log-day-title">${dayLabel} — ${summary.title || 'Completed Session'}</p>
           <div class="log-stats">
@@ -738,7 +753,7 @@ const MareApp = (function () {
       </div>
 
       <div class="settings-group">
-        <p class="settings-credit">MARE • Atelier — Dedicated Training Companion</p>
+        <p class="settings-credit">MARE • Planning — Dedicated Training Companion</p>
         <p class="settings-love-signature">This app was made with lots of love from your boyfriend</p>
       </div>
     `;
@@ -828,10 +843,15 @@ const MareApp = (function () {
         return;
       }
 
-      // Volume toggle buttons
-      const volBtn = e.target.closest('.vol-btn');
-      if (volBtn) {
-        MareEditor.setActiveVolume(volBtn.dataset.volume);
+      // Plan toggle buttons
+      const planBtn = e.target.closest('.plan-btn, .vol-btn');
+      if (planBtn) {
+        const selectedPlan = planBtn.dataset.plan || planBtn.dataset.volume;
+        if (MareEditor.setActivePlan) {
+          MareEditor.setActivePlan(selectedPlan);
+        } else {
+          MareEditor.setActiveVolume(selectedPlan);
+        }
         renderWorkouts();
         return;
       }
