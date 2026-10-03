@@ -9,10 +9,32 @@ const MareApp = (function () {
   let currentView = 'home';
   let activeDay = null;
   let transitionLock = false;
+  let transitionWatchdog = null;
+  let initialized = false;
 
   // ── DOM Cache ──
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => document.querySelectorAll(sel);
+
+  // ── Transition Lock with Watchdog ──
+  function acquireTransitionLock() {
+    transitionLock = true;
+    if (transitionWatchdog) clearTimeout(transitionWatchdog);
+    transitionWatchdog = setTimeout(() => {
+      releaseTransitionLock();
+    }, 550);
+  }
+
+  function releaseTransitionLock() {
+    transitionLock = false;
+    if (transitionWatchdog) {
+      clearTimeout(transitionWatchdog);
+      transitionWatchdog = null;
+    }
+    document.querySelectorAll('.card-transitioning').forEach((el) => el.remove());
+    const toView = $('#view-' + currentView);
+    if (toView) toView.classList.remove('view-entering');
+  }
 
   // ── 7-Day Week Mapping ──
   const DAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
@@ -36,15 +58,21 @@ const MareApp = (function () {
     return d.toISOString().split('T')[0];
   }
 
-  // ── View Router with Physical Shared-Element Zoom ──
+  // ── View Router with Physical Shared-Element Zoom & Safe Watchdog ──
   function navigateTo(viewId, triggerEl) {
     if (transitionLock || viewId === currentView) return;
-    transitionLock = true;
+    acquireTransitionLock();
+
+    // Remove any leftover transition clones
+    document.querySelectorAll('.card-transitioning').forEach((el) => el.remove());
 
     const fromView = $('#view-' + currentView);
     const toView = $('#view-' + viewId);
 
-    if (!toView) { transitionLock = false; return; }
+    if (!toView) {
+      releaseTransitionLock();
+      return;
+    }
 
     // Physical card zoom transition from home
     if (currentView === 'home' && triggerEl) {
@@ -58,6 +86,7 @@ const MareApp = (function () {
       clone.style.width = rect.width + 'px';
       clone.style.height = rect.height + 'px';
       clone.style.margin = '0';
+      clone.style.pointerEvents = 'none';
       document.body.appendChild(clone);
 
       requestAnimationFrame(() => {
@@ -76,13 +105,17 @@ const MareApp = (function () {
         toView.classList.add('view-entering');
         currentView = viewId;
 
-        onViewEnter(viewId);
-
-        setTimeout(() => {
-          toView.classList.remove('view-entering');
-          transitionLock = false;
-        }, 340);
-      }, 360);
+        try {
+          onViewEnter(viewId);
+        } catch (err) {
+          console.error('Error entering view ' + viewId + ':', err);
+        } finally {
+          setTimeout(() => {
+            toView.classList.remove('view-entering');
+            releaseTransitionLock();
+          }, 280);
+        }
+      }, 300);
     } else {
       // Physical exit transition for back navigation
       fromView.classList.add('view-exiting');
@@ -93,18 +126,21 @@ const MareApp = (function () {
         toView.classList.add('view-entering');
         currentView = viewId;
 
-        if (viewId === 'home') {
-          renderHome();
-          animateHomeCards();
-        } else {
-          onViewEnter(viewId);
+        try {
+          if (viewId === 'home') {
+            renderHome();
+          } else {
+            onViewEnter(viewId);
+          }
+        } catch (err) {
+          console.error('Error entering view ' + viewId + ':', err);
+        } finally {
+          setTimeout(() => {
+            toView.classList.remove('view-entering');
+            releaseTransitionLock();
+          }, 240);
         }
-
-        setTimeout(() => {
-          toView.classList.remove('view-entering');
-          transitionLock = false;
-        }, 340);
-      }, 190);
+      }, 180);
     }
   }
 
@@ -126,38 +162,9 @@ const MareApp = (function () {
     }
   }
 
-  function animateHomeCards() {
-    const cards = $$('.home-card');
-    cards.forEach((card, i) => {
-      card.style.opacity = '0';
-      card.style.transform = 'perspective(1000px) rotateX(12deg) translateY(24px) scale(0.96)';
-      setTimeout(() => {
-        card.style.transition = 'opacity 450ms cubic-bezier(0.2, 0.9, 0.3, 1), transform 450ms cubic-bezier(0.2, 0.9, 0.3, 1)';
-        card.style.opacity = '1';
-        card.style.transform = '';
-      }, 70 * i);
-    });
-  }
-
-  // ── Parallax ──
-  function initParallax() {
-    if (!window.DeviceOrientationEvent) return;
-
-    window.addEventListener('deviceorientation', (e) => {
-      const cards = $$('.home-card');
-      if (!cards.length || currentView !== 'home') return;
-
-      const tiltX = Math.min(Math.max((e.gamma || 0) / 45, -1), 1);
-      const tiltY = Math.min(Math.max((e.beta || 0) / 45, -1), 1);
-
-      cards.forEach((card, i) => {
-        const depth = (i + 1) * 1.5;
-        const baseRotY = (i % 2 === 0 ? -1.2 : 1.2);
-        const rotX = 3.5 - tiltY * 2.5;
-        const rotY = baseRotY + tiltX * 2.5;
-        card.style.transform = `perspective(1000px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg) translate3d(${-(tiltX * depth).toFixed(1)}px, ${-(tiltY * depth).toFixed(1)}px, 0)`;
-      });
-    }, { passive: true });
+  function onPageResume(persisted) {
+    releaseTransitionLock();
+    renderHome();
   }
 
   // ── Workouts View (Day-Aware Auto Routing) ──
@@ -719,6 +726,13 @@ const MareApp = (function () {
 
   // ── Init ──
   function init() {
+    if (initialized) {
+      releaseTransitionLock();
+      renderHome();
+      return;
+    }
+    initialized = true;
+
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch((err) => {
         console.warn('SW registration failed:', err);
@@ -727,23 +741,15 @@ const MareApp = (function () {
 
     MareTimer.init();
     renderHome();
-    animateHomeCards();
     bindEvents();
 
-    const unlockHandler = () => {
+    const unlockAudioHandler = () => {
       if (window.MareTimer && window.MareTimer.unlockAudio) {
         window.MareTimer.unlockAudio();
       }
-      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        DeviceOrientationEvent.requestPermission().then((perm) => {
-          if (perm === 'granted') initParallax();
-        }).catch(() => {});
-      } else {
-        initParallax();
-      }
     };
-    document.addEventListener('touchstart', unlockHandler, { once: true });
-    document.addEventListener('click', unlockHandler, { once: true });
+    document.addEventListener('touchstart', unlockAudioHandler, { once: true, passive: true });
+    document.addEventListener('click', unlockAudioHandler, { once: true, passive: true });
   }
 
   // ── Public API ──
@@ -752,6 +758,7 @@ const MareApp = (function () {
     navigateTo,
     goHome,
     renderWorkouts,
+    onPageResume,
     getTodayKey,
     getTodayString
   };
@@ -764,5 +771,22 @@ if (typeof globalThis !== 'undefined') {
   globalThis.MareApp = MareApp;
 }
 
-// Boot
-document.addEventListener('DOMContentLoaded', MareApp.init);
+// ── Resilient Boot: Handles cold load, cached load, and iOS BFCache restore ──
+function bootMareApp() {
+  if (typeof MareApp !== 'undefined' && MareApp.init) {
+    MareApp.init();
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootMareApp);
+} else {
+  // Document is already interactive or complete (e.g. Service Worker / iOS PWA cache)
+  bootMareApp();
+}
+
+window.addEventListener('pageshow', (event) => {
+  if (typeof MareApp !== 'undefined') {
+    MareApp.onPageResume(event.persisted);
+  }
+});

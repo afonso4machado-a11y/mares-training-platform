@@ -9,6 +9,7 @@
   box-shadow: 0 24px 60px rgba(22, 19, 34, 0.22);
   transition: all 380ms cubic-bezier(0.2, 0.9, 0.3, 1);
   will-change: transform, top, left, width, height, opacity;
+  pointer-events: none !important;
 }
 
 .view-entering {
@@ -61,25 +62,6 @@
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-/* Home Card Physics Entrance */
-.home-card {
-  opacity: 0;
-  transform: translateY(24px) scale(0.96);
-  animation: homeCardSpring 450ms cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
-}
-
-.home-card:nth-child(1) { animation-delay: 60ms; }
-.home-card:nth-child(2) { animation-delay: 120ms; }
-.home-card:nth-child(3) { animation-delay: 180ms; }
-.home-card:nth-child(4) { animation-delay: 240ms; }
-
-@keyframes homeCardSpring {
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
   }
 }
 
