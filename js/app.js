@@ -1094,7 +1094,10 @@ const MareApp = (function () {
     initialized = true;
 
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch((err) => {
+      navigator.serviceWorker.register('sw.js').then((reg) => {
+        // Force immediate check for new versions on every app launch
+        if (reg) reg.update();
+      }).catch((err) => {
         console.warn('SW registration failed:', err);
       });
     }
