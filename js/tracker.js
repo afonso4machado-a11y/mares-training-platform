@@ -408,14 +408,14 @@ const MareTracker = (function () {
       if (isStairs) {
         header.innerHTML = `
           <span class="set-label-header">#</span>
-          <span class="set-label-header">Tempo</span>
-          <span class="set-label-header">Nível</span>
+          <span class="set-label-header">Time</span>
+          <span class="set-label-header">Level</span>
           <span class="set-label-header"></span>
         `;
       } else {
         header.innerHTML = `
           <span class="set-label-header">#</span>
-          <span class="set-label-header">Tempo</span>
+          <span class="set-label-header">Time</span>
           <span class="set-label-header">Km/h</span>
           <span class="set-label-header">Inc %</span>
           <span class="set-label-header"></span>
@@ -445,13 +445,13 @@ const MareTracker = (function () {
           </div>
           <div class="set-input-wrap">
             <input type="number" class="set-input set-input-speed" inputmode="numeric"
-                   value="${set.speed !== undefined ? set.speed : ''}" placeholder="${prevSet && prevSet.speed ? prevSet.speed : 'nível'}"
+                   value="${set.speed !== undefined ? set.speed : ''}" placeholder="${prevSet && prevSet.speed ? prevSet.speed : 'level'}"
                    data-exercise="${exerciseId}" data-index="0" data-field="speed"
                    ${set.completed ? 'disabled' : ''} />
           </div>
           <button class="set-check ${set.completed ? 'checked' : ''}"
                   data-exercise="${exerciseId}" data-index="0"
-                  aria-label="Concluir sessão de cardio">
+                  aria-label="Complete cardio session">
             ${checkIcon}
           </button>
         `;
@@ -478,7 +478,7 @@ const MareTracker = (function () {
           </div>
           <button class="set-check ${set.completed ? 'checked' : ''}"
                   data-exercise="${exerciseId}" data-index="0"
-                  aria-label="Concluir sessão de cardio">
+                  aria-label="Complete cardio session">
             ${checkIcon}
           </button>
         `;

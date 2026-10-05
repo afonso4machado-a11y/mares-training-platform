@@ -809,8 +809,8 @@ const MareApp = (function () {
                 <thead>
                   <tr>
                     <th class="th-set">Set</th>
-                    <th class="th-load">${isCardio ? 'Velocidade / Nível' : 'Load (kg)'}</th>
-                    <th class="th-reps">${isCardio ? 'Tempo' : 'Reps'}</th>
+                    <th class="th-load">${isCardio ? 'Speed / Level' : 'Load (kg)'}</th>
+                    <th class="th-reps">${isCardio ? 'Time' : 'Reps'}</th>
                   </tr>
                 </thead>
                 <tbody>
